@@ -1,0 +1,16 @@
+# depslib dependency file v1.0
+1509483275 source:c:\users\doridian\programming\codeblocks\hmcpu\main.c
+	<stdio.h>
+	<stdlib.h>
+	"cpu.h"
+
+1509484517 source:c:\users\doridian\programming\codeblocks\hmcpu\cpu.c
+	<stddef.h>
+	<stdint.h>
+	<string.h>
+	"bootloader.h"
+
+1509483274 c:\users\doridian\programming\codeblocks\hmcpu\cpu.h
+
+1509483398 c:\users\doridian\programming\codeblocks\hmcpu\bootloader.h
+

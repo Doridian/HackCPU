@@ -32,7 +32,7 @@ for row in range(1, number_of_rows):
 		itypes.append(categoryx)
 
 	opid = int(cv(row, 'OP'))
-	instructions_py.append('%s"%s": {"i": %d, "type": IT_%s},' % (INDENT, cv(row, 'Name'), opid, cv(row, 'Type')))
+	instructions_py.append('%s"%s": OpCode(%d, IT_%s),' % (INDENT, cv(row, 'Name'), opid, cv(row, 'Type')))
 	lastopid += 1
 	if opid == 0 or lastopid < opid:
 		instructions.append('%sI_%s = %s,' % (INDENT, cv(row, 'Name'), opid))
@@ -49,6 +49,12 @@ IT_RRVV = 0
 IT_N = 1
 IT_RRVV32 = 2
 IT_INVALID = 3
+
+class OpCode:
+	def __init__(self, i, itype):
+		self.i = i
+		self.type = itype
+
 
 OPCODES = {
 ''' + '\n'.join(instructions_py) + '''

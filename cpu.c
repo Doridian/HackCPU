@@ -582,6 +582,8 @@ uint8_t cpu_step() {
     case I_DIVF:
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
+    default:
+        return interrupt(128);
     }
     return 0;
 }

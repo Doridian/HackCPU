@@ -85,6 +85,7 @@ enum INSTRUCTION {
     I_ENCON,
     I_PUSHREG,
     I_POPREG,
+    I_ENCRETN,
     // 32-bit Integer Arithmetic
     I_ADD32,
     I_SUB32,
@@ -219,8 +220,8 @@ void cpu_init() {
 
     ITYPES[I_NOP] = IT_N;
     ITYPES[I_RETN] = IT_N;
-    for (i = I_HALT; i <= I_POPREG; i++)
-        ITYPES[i] = IT_N; // HALT/RESET/TRAP/ENCOFF/ENCON/PUSHREG/POPREG
+    for (i = I_HALT; i <= I_ENCRETN; i++)
+        ITYPES[i] = IT_N; // HALT/RESET/TRAP/ENCOFF/ENCON/PUSHREG/POPREG/ENCRETN
 
     ITYPES[I_MOV32] = IT_RRVV32;
     ITYPES[I_PUSH32] = IT_RRVV32;

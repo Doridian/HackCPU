@@ -22,6 +22,87 @@
 #define FLAG_CMP   (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP (~FLAG_CMP)
 
+enum INSTRUCTION {
+    // Basic
+    I_MOV = 1,
+    I_MOV32,
+    I_PUSH,
+    I_POP,
+    I_PUSH32,
+    I_POP32,
+    I_NOP,
+    // 16-bit Arith
+    I_ADD,
+    I_SUB,
+    I_MUL,
+    I_DIV,
+    I_MOD,
+    I_SHL,
+    I_LSHR,
+    I_ASHR,
+    I_MULU,
+    I_DIVU,
+    // 16-bit Logic
+    I_XOR,
+    I_OR,
+    I_AND,
+    I_NOT,
+    I_NOR,
+    I_NAND,
+    // Compare
+    I_CMP,
+    I_CMPS,
+    I_CMP32,
+    I_CMP32S,
+    I_CMPF,
+    // Flow
+    I_JMP,
+    I_JGE,
+    I_JLE,
+    I_JE,
+    I_JNE,
+    I_JG,
+    I_JL,
+    I_JZ,
+    I_JNZ,
+    I_CALL,
+    I_CGE,
+    I_CLE,
+    I_CE,
+    I_CNE,
+    I_CG,
+    I_CL,
+    I_CZ,
+    I_CNZ,
+    I_RETN,
+    // Special
+    I_INT,
+    I_SETIH,
+    I_HALT,
+    I_RESET,
+    I_TRAP,
+    I_ENCOFF,
+    I_ENCON,
+    I_PUSHREG,
+    I_POPREG,
+    // 32-bit Integer Arithmetic
+    I_ADD32,
+    I_SUB32,
+    I_MUL32,
+    I_DIV32,
+    I_MOD32,
+    I_SHL32,
+    I_LSHR32,
+    I_ASHR32,
+    I_MULU32,
+    I_DIVU32,
+    // 32-bit Float Arithmetic
+    I_ADDF,
+    I_SUBF,
+    I_MULF,
+    I_DIVF,
+};
+
 enum ITYPE {
     IT_RRVV = 0,
     IT_N,
@@ -139,18 +220,18 @@ void cpu_init() {
     memset(m, 0, RAM_SIZE);
     memset(ITYPES, 0, 256);
 
-    ITYPES[7] = IT_N; // NOP
-    ITYPES[47] = IT_N; // RETN
-    for (i = 50; i <= 56; i++)
+    ITYPES[I_NOP] = IT_N;
+    ITYPES[I_RETN] = IT_N;
+    for (i = I_HALT; i <= I_POPREG; i++)
         ITYPES[i] = IT_N; // HALT/RESET/TRAP/ENCOFF/ENCON/PUSHREG/POPREG
 
-    ITYPES[2] = IT_RRVV32; // MOV32
-    ITYPES[5] = IT_RRVV32; // PUSH32
-    ITYPES[6] = IT_RRVV32; // POP32
-    ITYPES[26] = IT_RRVV32; // CMP32
-    ITYPES[27] = IT_RRVV32; // CMP32S
-    ITYPES[28] = IT_RRVV32; // CMPF
-    for (i = 57; i <= 70; i++)
+    ITYPES[I_MOV32] = IT_RRVV32;
+    ITYPES[I_PUSH32] = IT_RRVV32;
+    ITYPES[I_POP32] = IT_RRVV32;
+    ITYPES[I_CMP32] = IT_RRVV32;
+    ITYPES[I_CMP32S] = IT_RRVV32;
+    ITYPES[I_CMPF] = IT_RRVV32;
+    for (i = I_ADD32; i <= I_DIVF; i++)
         ITYPES[i] = IT_RRVV32; // INT32 / FLOAT32
 
     cpu_reset();
@@ -298,91 +379,91 @@ void cpu_step() {
 
     switch (op) {
         // Basic
-    case 1:
+    case I_MOV:
         *rrvv16.reg1 = rrvv16.reg2val;
         break;
-    case 2:
+    case I_MOV32:
         *rrvv32.reg1 = rrvv32.reg2val;
         break;
-    case 3:
+    case I_PUSH:
         push(rrvv16.reg1val);
         break;
-    case 4:
+    case I_POP:
         *rrvv16.reg1 = pop();
         break;
-    case 5:
+    case I_PUSH32:
         push32(rrvv16.reg1val);
         break;
-    case 6:
+    case I_POP32:
         *rrvv16.reg1 = pop32();
         break;
-    case 7:
+    case I_NOP:
         // NOP
         break;
         // 16-bit Arithmetic
-    case 8:
+    case I_ADD:
         *rrvv16.reg1s += rrvv16.reg2vals;
         break;
-    case 9:
+    case I_SUB:
         *rrvv16.reg1s -= rrvv16.reg2vals;
         break;
-    case 10:
+    case I_MUL:
         *rrvv16.reg1s *= rrvv16.reg2vals;
         break;
-    case 11:
+    case I_DIV:
         *rrvv16.reg1s /= rrvv16.reg2vals;
         break;
-    case 12:
+    case I_MOD:
         *rrvv16.reg1s %= rrvv16.reg2vals;
         break;
-    case 13:
+    case I_SHL:
         *rrvv16.reg1s <<= rrvv16.reg2vals;
         break;
-    case 14: // LSHR
+    case I_LSHR:
         *rrvv16.reg1 >>= rrvv16.reg2val;
         break;
-    case 15: // ASHR
+    case I_ASHR:
         *rrvv16.reg1s >>= rrvv16.reg2vals;
         break;
-    case 16:
+    case I_MULU:
         *rrvv16.reg1 *= rrvv16.reg2val;
         break;
-    case 17:
+    case I_DIVU:
         *rrvv16.reg1 /= rrvv16.reg2val;
         break;
         // Logic
-    case 18:
+    case I_XOR:
         *rrvv16.reg1 ^= rrvv16.reg2val;
         break;
-    case 19:
+    case I_OR:
         *rrvv16.reg1 |= rrvv16.reg2val;
         break;
-    case 20:
+    case I_AND:
         *rrvv16.reg1 &= rrvv16.reg2val;
         break;
-    case 21:
+    case I_NOT:
         *rrvv16.reg1 = ~rrvv16.reg2val;
         break;
-    case 22:
+    case I_NOR:
         *rrvv16.reg1 |= ~rrvv16.reg2val;
         break;
-    case 23:
+    case I_NAND:
         *rrvv16.reg1 &= ~rrvv16.reg2val;
         break;
         // Compare
-    case 24:
+    case I_CMP:
         DOCMP(rrvv16.reg1val, rrvv16.reg2val);
         break;
-    case 25:
+    case I_CMPS:
         DOCMP(rrvv16.reg1vals, rrvv16.reg2vals);
         break;
-    case 26:
+    case I_CMP32:
         DOCMP(rrvv32.reg1val, rrvv32.reg2val);
         break;
-    case 27:
+    case I_CMP32S:
         DOCMP(rrvv32.reg1vals, rrvv32.reg2vals);
         break;
-    case 28:
+    case I_CMPF:
         DOCMP(rrvv32.reg1valf, rrvv32.reg2valf);
         break;
     }

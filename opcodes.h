@@ -141,7 +141,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV,
     IT_RRVV,
     IT_RRVV,
-    IT_RRVV,
+    IT_N,
     // Special
     IT_RRVV,
     IT_RRVV,

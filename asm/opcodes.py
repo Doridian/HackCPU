@@ -85,4 +85,3 @@ OPCODES = {
     "MULF": {"i": 69, "type": IT_RRVV32},
     "DIVF": {"i": 70, "type": IT_RRVV32},
 }
-

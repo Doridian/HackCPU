@@ -1,3 +1,4 @@
+
 #ifndef OPCODES_H_INCLUDED
 #define OPCODES_H_INCLUDED
 
@@ -173,4 +174,3 @@ static uint8_t ITYPES[] = {
 };
 
 #endif // OPCODES_H_INCLUDED
-

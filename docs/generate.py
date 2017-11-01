@@ -15,6 +15,7 @@ def cv(row, col):
 for col in range(0, number_of_columns):
 	colIndices[sheet.cell(0, col).value] = col
 
+instructions_py = []
 instructions = []
 itypes = []
 
@@ -24,11 +25,14 @@ lastopid = -1
 for row in range(1, number_of_rows):
 	category = cv(row, 'Category')
 	if category:
-		category = '%s// %s' % (INDENT, category)
-		instructions.append(category)
-		itypes.append(category)
+		categoryx = '%s# %s' % (INDENT, category)
+		instructions_py.append(categoryx)
+		categoryx = '%s// %s' % (INDENT, category)
+		instructions.append(categoryx)
+		itypes.append(categoryx)
 
 	opid = int(cv(row, 'OP'))
+	instructions_py.append('%s"%s": {"i": %d, "type": IT_%s},' % (INDENT, cv(row, 'Name'), opid, cv(row, 'Type')))
 	lastopid += 1
 	if opid == 0 or lastopid < opid:
 		instructions.append('%sI_%s = %s,' % (INDENT, cv(row, 'Name'), opid))
@@ -39,7 +43,22 @@ for row in range(1, number_of_rows):
 		lastopid += 1
 	itypes.append('%sIT_%s,' % (INDENT, cv(row, 'Type')))
 
-print('''#ifndef OPCODES_H_INCLUDED
+f = open("../asm/opcodes.py", "w")
+f.write('''
+IT_RRVV = 0
+IT_N = 1
+IT_RRVV32 = 2
+IT_INVALID = 3
+
+OPCODES = {
+''' + '\n'.join(instructions_py) + '''
+}
+''')
+f.close()
+
+f = open("../opcodes.h", "w")
+f.write('''
+#ifndef OPCODES_H_INCLUDED
 #define OPCODES_H_INCLUDED
 
 enum INSTRUCTION {
@@ -59,3 +78,4 @@ static uint8_t ITYPES[] = {
 
 #endif // OPCODES_H_INCLUDED
 ''')
+f.close()

@@ -38,9 +38,13 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="cpu.h" />
+		<Unit filename="io.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="memory.h" />
+		<Unit filename="opcodes.h" />
+		<Unit filename="registers.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

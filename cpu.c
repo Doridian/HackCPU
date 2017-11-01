@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "opcodes.h"
 #include "bootloader.h"
+#include "io.h"
 
 static void memclear(void *ptr, size_t num) {
     size_t *ptrw = (size_t *)ptr;
@@ -204,6 +205,24 @@ static uint32_t pop32() {
 #define IFNZ() if (rrvv16.reg1val != 0)
 
 static uint8_t cpu_interrupt(uint8_t i) {
+    switch (i) {
+    case 0:
+        break;
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    case 4:
+        break;
+    case 5:
+        break;
+    case 6:
+        break;
+    case 7:
+        break;
+    }
     return ERR_UNHANDLED_INTERRUPT;
 }
 

@@ -4,7 +4,7 @@
 	<stdlib.h>
 	"cpu.h"
 
-1509507093 source:c:\users\doridian\programming\codeblocks\hmcpu\cpu.c
+1509538829 source:c:\users\doridian\programming\codeblocks\hmcpu\cpu.c
 	<stdint.h>
 	<stddef.h>
 	"cpu.h"
@@ -12,6 +12,7 @@
 	"memory.h"
 	"opcodes.h"
 	"bootloader.h"
+	"io.h"
 
 1509507224 c:\users\doridian\programming\codeblocks\hmcpu\cpu.h
 	<stdint.h>
@@ -26,4 +27,6 @@
 	<stdint.h>
 
 1509504447 c:\users\doridian\programming\codeblocks\hmcpu\opcodes.h
+
+1509538954 c:\users\doridian\programming\codeblocks\hmcpu\io.h
 

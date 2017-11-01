@@ -1,5 +1,6 @@
 from opcodes import *
 from sys import argv
+from math import ceil
 
 REGISTERS = {
 	"R1":      0,
@@ -22,17 +23,21 @@ REGISTERS = {
 	"ENCREG":  6,
 }
 
-baseaddr = len(argv) > 3 and int(argv[3]) or -1
+BYTEORDER = 'big'
+
+baseaddr = -1
+if len(argv) > 3:
+	baseaddr = int(argv[3])
 
 bpos = 0
 labels = {}
 instructions = []
 
 in_f = open(argv[1], "r")
-out_f = open(argv[2], "w")
+out_f = open(argv[2], "wb")
 
 class Parameter:
-	def __init__(self, src, b32 = False):
+	def __init__(self, src):
 		if src[0] == "@":
 			if src[1] == ":":
 				self.rval = REGISTERS["MREGC"]
@@ -43,26 +48,35 @@ class Parameter:
 			else:
 				self.rval = REGISTERS["MREGC"]
 				# Convert to binary
-				self.cval = int(src)
+				self.cval = int(src[1:], 0)
 		elif src[0] == ":":
 			self.rval = REGISTERS["CREG"]
 			self.cval = src[1:]
 		elif src[0] == "$":
 			# Convert to binary
 			self.rval = REGISTERS[src[1:]]
-			self.cval = []
+			self.cval = None
 		else:
 			self.rval = REGISTERS["CREG"]
 			# Check if 32-bit mode and convert as number to binary
-			self.cval = int(src)
+			self.cval = int(src, 0)
 
-	def len(self):
-		return 1 + len(self.cval)
+	def len(self, b32):
+		if self.cval == None:
+			return 0
+		if self.rval == REGISTERS["CREG"] and b32:
+			return 4
+		return 2
 
-	def getcval(self):
-		if type(self.cval) == "string":
-			# Convert to binary
-			return labels[self.cval].bpos + baseaddr
+	def getcval(self, b32):
+		if isinstance(self.cval, str):
+			self.cval = labels[self.cval].bpos + baseaddr
+
+		if isinstance(self.cval, int):
+			if self.rval == REGISTERS["CREG"] and b32:
+				return self.cval.to_bytes(4, BYTEORDER)
+			return self.cval.to_bytes(2, BYTEORDER)
+
 		return self.cval
 
 class Instruction:
@@ -71,15 +85,16 @@ class Instruction:
 		self.opcode = opcode
 		self.params = params
 		self.bpos = bpos
+		self.b32 = self.opcode.type == IT_RRVV32
 		bpos += self.len()
 
 	def len(self):
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
 
-		mylen = 1
+		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
-			mylen += self.params[i].len()
+			mylen += self.params[i].len(self.b32)
 
 		return mylen
 
@@ -88,13 +103,19 @@ class Instruction:
 		if self.opcode.type == IT_VIRTUAL:
 			return
 
-		#out_f.write(self.opcode.i)
+		out_f.write(self.opcode.i.to_bytes(1, BYTEORDER))
+
 		for i in range(0, len(self.params), 2):
-			#out_f.write(self.params[i].rval << 4 | self.params[i + 1].rval)
-			continue
+			subval = 0
+			if i < len(self.params) - 1:
+				subval = self.params[i + 1].rval
+			out_f.write((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
+
 		for i in range(0, len(self.params)):
-			#out_f.write(self.params[i].getcval())
-			continue
+			cval = self.params[i].getcval(self.b32)
+			if cval == None:
+				continue
+			out_f.write(cval)
 
 # params can be:
 # :LABEL to refer to a label
@@ -123,7 +144,6 @@ if baseaddr < 0:
 	baseaddr = 0xFFFF - bpos
 
 for insn in instructions:
-	print(insn.bpos)
 	insn.write()
 
 in_f.close()

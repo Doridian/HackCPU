@@ -6,9 +6,9 @@
 #define REGISTERS_SIZE 16
 #define RAM_SIZE 65536
 
-#define CREG_ID 6
-#define MREG_ID 7
-#define MREGC_ID 12
+#define CREG_ID 13
+#define MREG_ID 14
+#define MREGC_ID 15
 
 #define FLAG_EQ    (0b1)
 #define FLAG_LT    (0b10)
@@ -145,8 +145,6 @@ typedef union registers_t {
         };
         uint16_t sp;
         uint16_t pc;
-        uint16_t creg; // 6
-        uint16_t mreg; // 7
         union {
             uint32_t encreg12;
             struct {
@@ -156,7 +154,6 @@ typedef union registers_t {
         };
         uint16_t flagr;
         uint16_t ihbase;
-        uint16_t mregc;
 
     };
     uint16_t u[REGISTERS_SIZE];

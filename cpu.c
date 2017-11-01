@@ -342,7 +342,7 @@ uint8_t cpu_run() {
     }
 }
 
-uint8_t cpu_step() {
+static uint8_t _cpu_step() {
     uint8_t op = iread8();
     regregvalval16_t rrvv16;
     regregvalval32_t rrvv32;
@@ -585,6 +585,31 @@ uint8_t cpu_step() {
     default:
         return interrupt(128);
     }
+
     return 0;
 }
+
+uint8_t cpu_step() {
+    uint8_t res = _cpu_step();
+    if (!res) {
+        if (r.flagr & FLAG_TRAP) {
+            r.flagr &= ~FLAG_TRAP;
+            uint16_t oldpc = r.pc;
+            uint8_t ires = interrupt(130);
+            if (ires) {
+                return ires;
+            }
+            push(oldpc);
+        }
+        return 0;
+    }
+    uint16_t oldpc = r.pc;
+    if (!interrupt(129)) {
+        push(oldpc);
+        push(res);
+        return 0;
+    }
+    return res;
+}
+
 #pragma GCC diagnostic pop

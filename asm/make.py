@@ -62,7 +62,7 @@ class Parameter:
 	def getcval(self):
 		if type(self.cval) == "string":
 			# Convert to binary
-			return labels[self.cval].bpos
+			return labels[self.cval].bpos + baseaddr
 		return self.cval
 
 class Instruction:
@@ -118,6 +118,9 @@ for line in in_f:
 
 	if insn != None:
 		instructions.append(insn)
+
+if baseaddr < 0:
+	baseaddr = 0xFFFF - bpos
 
 for insn in instructions:
 	print(insn.bpos)

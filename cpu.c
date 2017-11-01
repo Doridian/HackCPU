@@ -87,7 +87,7 @@ void cpu_init() {
     // ROM
     io[IO_ROM].rptr = 0;
     io[IO_ROM].wptr = 0;
-    io[IO_ROM].length = 0;
+    io[IO_ROM].length = 1024;
     io[IO_ROM].read = devzero_read;
     io[IO_ROM].write = 0;
     io[IO_ROM].flags = FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;

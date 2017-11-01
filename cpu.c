@@ -220,7 +220,6 @@ static uint8_t interrupt(uint8_t i) {
 }
 
 void cpu_run() {
-    cpu_reset();
     while(cpu_step());
 }
 

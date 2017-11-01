@@ -31,7 +31,7 @@ for row in range(1, number_of_rows):
 	opid = int(cv(row, 'OP'))
 	lastopid += 1
 	if opid == 0 or lastopid < opid:
-		instructions.append('%sI_%s = 0,' % (INDENT, cv(row, 'Name')))
+		instructions.append('%sI_%s = %s,' % (INDENT, cv(row, 'Name'), opid))
 	else:
 		instructions.append('%sI_%s,' % (INDENT, cv(row, 'Name')))
 	while lastopid < opid:

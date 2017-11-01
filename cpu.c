@@ -204,7 +204,7 @@ static uint32_t pop32() {
 #define IFNZ() if (rrvv16.reg1val != 0)
 
 static uint8_t cpu_interrupt(uint8_t i) {
-    return 0;
+    return ERR_UNHANDLED_INTERRUPT;
 }
 
 static uint8_t interrupt(uint8_t i) {
@@ -216,11 +216,16 @@ static uint8_t interrupt(uint8_t i) {
         return cpu_interrupt(i);
     }
     r.pc = newpc;
-    return 1;
+    return 0;
 }
 
-void cpu_run() {
-    while(cpu_step());
+uint8_t cpu_run() {
+    while(1) {
+        uint8_t res = cpu_step();
+        if (res) {
+            return res;
+        }
+    }
 }
 
 uint8_t cpu_step() {
@@ -394,7 +399,7 @@ uint8_t cpu_step() {
         m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase] = rrvv16.reg2val;
         break;
     case I_HALT:
-        return 0;
+        return ERR_HALT;
     case I_RESET:
         cpu_reset();
         break;
@@ -464,6 +469,6 @@ uint8_t cpu_step() {
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
     }
-    return 1;
+    return 0;
 }
 #pragma GCC diagnostic pop

@@ -7,6 +7,8 @@
 #include "bootloader.h"
 #include "io.h"
 
+uint8_t cpu_needs_reset = 1;
+
 static void memclear(void *ptr, size_t num) {
     size_t *ptrw = (size_t *)ptr;
     size_t numw  = (num & -sizeof(size_t)) / sizeof(size_t);
@@ -68,6 +70,7 @@ void cpu_reset() {
     for (i = 0; i < sizeof(BOOTLOADER); i++) {
         m[i] = BOOTLOADER[i];
     }
+    cpu_needs_reset = 0;
 }
 
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
@@ -596,6 +599,10 @@ static uint8_t _cpu_step() {
 }
 
 uint8_t cpu_step() {
+    if (cpu_needs_reset) {
+        return ERR_HALT;
+    }
+
     uint8_t res = _cpu_step();
     if (!res) {
         if (r.flagr & FLAG_TRAP) {
@@ -610,6 +617,8 @@ uint8_t cpu_step() {
     if (!interrupt(129, res)) {
         return 0;
     }
+
+    cpu_needs_reset = 1;
     return res;
 }
 

@@ -10,7 +10,7 @@ enum INSTRUCTION {
     I_PUSH32,
     I_POP32,
     I_NOP,
-    // 16-bit Arith
+    // Integer Arithmetic
     I_ADD,
     I_SUB,
     I_MUL,
@@ -21,7 +21,7 @@ enum INSTRUCTION {
     I_ASHR,
     I_MULU,
     I_DIVU,
-    // 16-bit Logic
+    // Logic
     I_XOR,
     I_OR,
     I_AND,
@@ -65,7 +65,7 @@ enum INSTRUCTION {
     I_PUSHREG,
     I_POPREG,
     I_ENCRETN,
-    // 32-bit Integer Arithmetic
+    // Integer Arithmetic 32bit
     I_ADD32,
     I_SUB32,
     I_MUL32,
@@ -76,7 +76,7 @@ enum INSTRUCTION {
     I_ASHR32,
     I_MULU32,
     I_DIVU32,
-    // 32-bit Float Arithmetic
+    // Float Arithmetic 32bit
     I_ADDF,
     I_SUBF,
     I_MULF,
@@ -87,6 +87,7 @@ enum ITYPE {
     IT_RRVV = 0,
     IT_N,
     IT_RRVV32,
+    IT_INVALID
 };
 
 static uint8_t ITYPES[] = {
@@ -98,7 +99,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV32,
     IT_RRVV32,
     IT_N,
-    // 16-bit Arith
+    // Integer Arithmetic
     IT_RRVV,
     IT_RRVV,
     IT_RRVV,
@@ -109,7 +110,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV,
     IT_RRVV,
     IT_RRVV,
-    // 16-bit Logic
+    // Logic
     IT_RRVV,
     IT_RRVV,
     IT_RRVV,
@@ -153,7 +154,7 @@ static uint8_t ITYPES[] = {
     IT_N,
     IT_N,
     IT_N,
-    // 32-bit Integer Arithmetic
+    // Integer Arithmetic 32bit
     IT_RRVV32,
     IT_RRVV32,
     IT_RRVV32,
@@ -164,7 +165,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV32,
     IT_RRVV32,
     IT_RRVV32,
-    // 32-bit Float Arithmetic
+    // Float Arithmetic 32bit
     IT_RRVV32,
     IT_RRVV32,
     IT_RRVV32,
@@ -172,3 +173,4 @@ static uint8_t ITYPES[] = {
 };
 
 #endif // OPCODES_H_INCLUDED
+

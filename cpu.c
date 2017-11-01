@@ -1,169 +1,23 @@
-#include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+#include <stddef.h>
+#include "cpu.h"
+#include "registers.h"
+#include "memory.h"
+#include "opcodes.h"
 #include "bootloader.h"
 
-#define REGISTERS_SIZE 16
-#define RAM_SIZE 65536
-
-#define CREG_ID 13
-#define MREG_ID 14
-#define MREGC_ID 15
-
-#define FLAG_EQ    (0b1)
-#define FLAG_LT    (0b10)
-//#define FLAG_GT    (0b100)
-
-#define FLAG_TRAP  (0b1000)
-#define FLAG_ENCON (0b10000)
-
-//#define FLAG_LTE   (FLAG_EQ|FLAG_LT)
-//#define FLAG_GTE   (FLAG_EQ|FLAG_GT)
-#define FLAG_CMP   (FLAG_EQ|FLAG_LT)
-#define FLAG_NOCMP (~FLAG_CMP)
-
-enum INSTRUCTION {
-    // Basic
-    I_MOV = 1,
-    I_MOV32,
-    I_PUSH,
-    I_POP,
-    I_PUSH32,
-    I_POP32,
-    I_NOP,
-    // 16-bit Arith
-    I_ADD,
-    I_SUB,
-    I_MUL,
-    I_DIV,
-    I_MOD,
-    I_SHL,
-    I_LSHR,
-    I_ASHR,
-    I_MULU,
-    I_DIVU,
-    // 16-bit Logic
-    I_XOR,
-    I_OR,
-    I_AND,
-    I_NOT,
-    I_NOR,
-    I_NAND,
-    // Compare
-    I_CMP,
-    I_CMPS,
-    I_CMP32,
-    I_CMP32S,
-    I_CMPF,
-    // Flow
-    I_JMP,
-    I_JGE,
-    I_JLE,
-    I_JE,
-    I_JNE,
-    I_JG,
-    I_JL,
-    I_JZ,
-    I_JNZ,
-    I_CALL,
-    I_CGE,
-    I_CLE,
-    I_CE,
-    I_CNE,
-    I_CG,
-    I_CL,
-    I_CZ,
-    I_CNZ,
-    I_RETN,
-    // Special
-    I_INT,
-    I_SETIH,
-    I_HALT,
-    I_RESET,
-    I_TRAP,
-    I_ENCOFF,
-    I_ENCON,
-    I_PUSHREG,
-    I_POPREG,
-    I_ENCRETN,
-    // 32-bit Integer Arithmetic
-    I_ADD32,
-    I_SUB32,
-    I_MUL32,
-    I_DIV32,
-    I_MOD32,
-    I_SHL32,
-    I_LSHR32,
-    I_ASHR32,
-    I_MULU32,
-    I_DIVU32,
-    // 32-bit Float Arithmetic
-    I_ADDF,
-    I_SUBF,
-    I_MULF,
-    I_DIVF,
-};
-
-enum ITYPE {
-    IT_RRVV = 0,
-    IT_N,
-    IT_RRVV32,
-};
-
-static uint8_t ITYPES[256];
-
-typedef union registers_t {
-    struct {
-        union {
-            uint32_t r12;
-            int32_t r12s;
-            float r12f;
-            struct {
-                union {
-                    uint16_t r1;
-                    int16_t r1s;
-                };
-                union {
-                    uint16_t r2;
-                    int16_t r2s;
-                };
-            };
-        };
-        union {
-            uint32_t r34;
-            int32_t r34s;
-            float r34f;
-            struct {
-                union {
-                    uint16_t r3;
-                    int16_t r3s;
-                };
-                union {
-                    uint16_t r4;
-                    int16_t r4s;
-                };
-            };
-        };
-        uint16_t sp;
-        uint16_t pc;
-        union {
-            uint32_t encreg12;
-            struct {
-                uint16_t encreg1;
-                uint16_t encreg2;
-            };
-        };
-        uint16_t flagr;
-        uint16_t ihbase;
-
-    };
-    uint16_t u[REGISTERS_SIZE];
-    int16_t s[REGISTERS_SIZE];
-} registers_t;
-
-static registers_t r;
-
-static uint8_t m[RAM_SIZE];
+static void memclear(void *ptr, size_t num) {
+    size_t *ptrw = (size_t *)ptr;
+    size_t numw  = (num & -sizeof(size_t)) / sizeof(size_t);
+    while (numw--) {
+        *ptrw++ = 0;
+    }
+    num &= (sizeof(size_t) - 1);
+    uint8_t *ptrb = (uint8_t *)ptrw;
+    while (num--) {
+        *ptrb++ = 0;
+    }
+}
 
 typedef struct regregvalval32_t {
     union {
@@ -208,30 +62,15 @@ typedef struct regregvalval16_t {
 } regregvalval16_t;
 
 void cpu_reset() {
-    memset(&r, 0, sizeof(r));
-    memcpy(m, BOOTLOADER, sizeof(BOOTLOADER));
+    memclear(&r, sizeof(r));
+    int i;
+    for (i = 0; i < sizeof(BOOTLOADER); i++) {
+        m[i] = BOOTLOADER[i];
+    }
 }
 
 void cpu_init() {
-    int i;
-
-    memset(m, 0, RAM_SIZE);
-    memset(ITYPES, 0, 256);
-
-    ITYPES[I_NOP] = IT_N;
-    ITYPES[I_RETN] = IT_N;
-    for (i = I_HALT; i <= I_ENCRETN; i++)
-        ITYPES[i] = IT_N; // HALT/RESET/TRAP/ENCOFF/ENCON/PUSHREG/POPREG/ENCRETN
-
-    ITYPES[I_MOV32] = IT_RRVV32;
-    ITYPES[I_PUSH32] = IT_RRVV32;
-    ITYPES[I_POP32] = IT_RRVV32;
-    ITYPES[I_CMP32] = IT_RRVV32;
-    ITYPES[I_CMP32S] = IT_RRVV32;
-    ITYPES[I_CMPF] = IT_RRVV32;
-    for (i = I_ADD32; i <= I_DIVF; i++)
-        ITYPES[i] = IT_RRVV32; // INT32 / FLOAT32
-
+    memclear(m, RAM_SIZE);
     cpu_reset();
 }
 
@@ -349,14 +188,20 @@ static uint32_t pop32() {
                               ((a < b) << 1) | \
                               (a == b);
 
-#define IFEQ()  if   (r.flags & FLAG_EQ)
-#define IFNEQ() if (!(r.flags & FLAG_EQ))
+#define IFEQ()  if   (r.flagr & FLAG_EQ)
+#define IFNEQ() if (!(r.flagr & FLAG_EQ))
 
-#define IFLT()  if   (r.flags & FLAG_LT)
-#define IFGTE() if (!(r.flags & FLAG_LT))
+#define IFLT()  if   (r.flagr & FLAG_LT)
+#define IFGTE() if (!(r.flagr & FLAG_LT))
 
-#define IFLTE() if   (r.flags & (FLAG_LT|FLAG_EQ))
-#define IFGT()  if (!(r.flags & (FLAG_LT|FLAG_EQ)))
+#define IFLTE() if   (r.flagr & (FLAG_LT|FLAG_EQ))
+#define IFGT()  if (!(r.flagr & (FLAG_LT|FLAG_EQ)))
+
+#define DOJMP() { r.pc = rrvv16.reg1val; }
+#define DOCALL() { push(r.pc); DOJMP(); }
+
+#define IFZ()  if (rrvv16.reg1val == 0)
+#define IFNZ() if (rrvv16.reg1val != 0)
 
 void cpu_step() {
     uint8_t op = iread8();
@@ -463,6 +308,142 @@ void cpu_step() {
         break;
     case I_CMPF:
         DOCMP(rrvv32.reg1valf, rrvv32.reg2valf);
+        break;
+        // Flow
+    case I_JMP:
+        DOJMP();
+        break;
+    case I_JGE:
+        IFGTE() { DOJMP(); }
+        break;
+    case I_JLE:
+        IFLTE() { DOJMP(); }
+        break;
+    case I_JE:
+        IFEQ() { DOJMP(); }
+        break;
+    case I_JNE:
+        IFNEQ() { DOJMP(); }
+        break;
+    case I_JG:
+        IFGT() { DOJMP(); }
+        break;
+    case I_JL:
+        IFLT() { DOJMP(); }
+        break;
+    case I_JZ:
+        IFZ() { DOJMP(); }
+        break;
+    case I_JNZ:
+        IFNZ() { DOJMP(); }
+        break;
+    case I_CALL:
+        DOCALL();
+        break;
+    case I_CGE:
+        IFGTE() { DOCALL(); }
+        break;
+    case I_CLE:
+        IFLTE() { DOCALL(); }
+        break;
+    case I_CE:
+        IFEQ() { DOCALL(); }
+        break;
+    case I_CNE:
+        IFNEQ() { DOCALL(); }
+        break;
+    case I_CG:
+        IFGT() { DOCALL(); }
+        break;
+    case I_CL:
+        IFLT() { DOCALL(); }
+        break;
+    case I_CZ:
+        IFZ() { DOCALL(); }
+        break;
+    case I_CNZ:
+        IFNZ() { DOCALL(); }
+        break;
+    case I_RETN:
+        r.pc = pop();
+        break;
+        // Special
+    case I_INT:
+        r.pc = m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase];
+        break;
+    case I_SETIH:
+        m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase] = rrvv16.reg2val;
+        break;
+    case I_HALT:
+        cpu_init();
+        break;
+    case I_RESET:
+        cpu_reset();
+        break;
+    case I_TRAP:
+        r.flagr |= FLAG_TRAP;
+        break;
+    case I_ENCOFF:
+        r.flagr |= FLAG_ENCON;
+        break;
+    case I_ENCON:
+        r.flagr &= ~FLAG_ENCON;
+        break;
+    case I_PUSHREG:
+        push32(r.r12);
+        push32(r.r34);
+        break;
+    case I_POPREG:
+        pop32(r.r34);
+        pop32(r.r12);
+        break;
+    case I_ENCRETN:
+        r.flagr |= FLAG_ENCON;
+        r.pc = pop();
+        break;
+        // 32-bit Integer Arithmetic
+    case I_ADD32:
+        *rrvv32.reg1s += rrvv32.reg2vals;
+        break;
+    case I_SUB32:
+        *rrvv32.reg1s -= rrvv32.reg2vals;
+        break;
+    case I_MUL32:
+        *rrvv32.reg1s *= rrvv32.reg2vals;
+        break;
+    case I_DIV32:
+        *rrvv32.reg1s /= rrvv32.reg2vals;
+        break;
+    case I_MOD32:
+        *rrvv32.reg1s %= rrvv32.reg2vals;
+        break;
+    case I_SHL32:
+        *rrvv32.reg1s <<= rrvv32.reg2vals;
+        break;
+    case I_LSHR32:
+        *rrvv32.reg1 >>= rrvv32.reg2val;
+        break;
+    case I_ASHR32:
+        *rrvv32.reg1s >>= rrvv32.reg2vals;
+        break;
+    case I_MULU32:
+        *rrvv32.reg1 *= rrvv32.reg2val;
+        break;
+    case I_DIVU32:
+        *rrvv32.reg1 /= rrvv32.reg2val;
+        break;
+        // 32-bit Float Arithmetic
+    case I_ADDF:
+        *rrvv32.reg1f += rrvv32.reg2valf;
+        break;
+    case I_SUBF:
+        *rrvv32.reg1f -= rrvv32.reg2valf;
+        break;
+    case I_MULF:
+        *rrvv32.reg1f *= rrvv32.reg2valf;
+        break;
+    case I_DIVF:
+        *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
     }
 }

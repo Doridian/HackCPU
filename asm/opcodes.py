@@ -3,6 +3,7 @@ IT_RRVV = 0
 IT_N = 1
 IT_RRVV32 = 2
 IT_INVALID = 3
+IT_VIRTUAL = 4
 
 class OpCode:
 	def __init__(self, i, itype):
@@ -90,4 +91,5 @@ OPCODES = {
     "SUBF": OpCode(68, IT_RRVV32),
     "MULF": OpCode(69, IT_RRVV32),
     "DIVF": OpCode(70, IT_RRVV32),
+    "REM": OpCode(-1, IT_VIRTUAL),
 }

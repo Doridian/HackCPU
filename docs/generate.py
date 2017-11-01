@@ -49,6 +49,7 @@ IT_RRVV = 0
 IT_N = 1
 IT_RRVV32 = 2
 IT_INVALID = 3
+IT_VIRTUAL = 4
 
 class OpCode:
 	def __init__(self, i, itype):
@@ -58,6 +59,7 @@ class OpCode:
 
 OPCODES = {
 ''' + '\n'.join(instructions_py) + '''
+    "REM": OpCode(-1, IT_VIRTUAL),
 }
 ''')
 f.close()

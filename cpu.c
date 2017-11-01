@@ -322,6 +322,9 @@ static uint8_t cpu_interrupt(uint8_t i) {
 }
 
 static uint8_t interrupt(uint8_t i) {
+    if (i & 0b10000000) {
+        push(r.pc);
+    }
     if (r.ihbase == 0) {
         return cpu_interrupt(i);
     }
@@ -583,7 +586,7 @@ static uint8_t _cpu_step() {
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
     default:
-        return interrupt(128);
+         interrupt(128);
     }
 
     return 0;
@@ -591,7 +594,6 @@ static uint8_t _cpu_step() {
 
 uint8_t cpu_step() {
     uint8_t res = _cpu_step();
-    uint16_t oldpc = r.pc;
     if (!res) {
         if (r.flagr & FLAG_TRAP) {
             r.flagr &= ~FLAG_TRAP;
@@ -599,12 +601,10 @@ uint8_t cpu_step() {
             if (ires) {
                 return ires;
             }
-            push(oldpc);
         }
         return 0;
     }
     if (!interrupt(129)) {
-        push(oldpc);
         push(res);
         return 0;
     }

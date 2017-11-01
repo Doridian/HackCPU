@@ -70,8 +70,44 @@ void cpu_reset() {
     }
 }
 
+static void devzero_write(struct iostream_t* io, uint8_t i) { }
+static uint8_t devzero_read(struct iostream_t* io) { return 0; }
+
 void cpu_init() {
     memclear(m, RAM_SIZE);
+
+    // stdout
+    io[IO_STDOUT].rptr = 0;
+    io[IO_STDOUT].wptr = 0;
+    io[IO_STDOUT].length = 0;
+    io[IO_STDOUT].read = 0;
+    io[IO_STDOUT].write = devzero_write;
+    io[IO_STDOUT].flags = 0;
+
+    // ROM
+    io[IO_ROM].rptr = 0;
+    io[IO_ROM].wptr = 0;
+    io[IO_ROM].length = 0;
+    io[IO_ROM].read = devzero_read;
+    io[IO_ROM].write = 0;
+    io[IO_ROM].flags = FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;
+
+    // stdin
+    io[IO_STDIN].rptr = 0;
+    io[IO_STDIN].wptr = 0;
+    io[IO_STDIN].length = 0;
+    io[IO_STDIN].read = devzero_read;
+    io[IO_STDIN].write = 0;
+    io[IO_STDIN].flags = 0;
+
+    // /dev/zero
+    io[3].rptr = 0;
+    io[3].wptr = 0;
+    io[3].length = 0;
+    io[3].read = devzero_read;
+    io[3].write = devzero_write;
+    io[3].flags = FLAG_WPTR_GET|FLAG_WPTR_SET|FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;
+
     cpu_reset();
 }
 
@@ -205,25 +241,84 @@ static uint32_t pop32() {
 #define IFNZ() if (rrvv16.reg1val != 0)
 
 static uint8_t cpu_interrupt(uint8_t i) {
+    if (i > 7) {
+        return ERR_UNHANDLED_INTERRUPT;
+    }
+    uint16_t ioid = pop();
+    if (ioid >= IOSTREAM_COUNT) {
+        return ERR_INVALID_IO;
+    }
+    iostream_t iostr = io[ioid];
+    uint16_t offset, len, x;
+
     switch (i) {
     case 0:
+        offset = pop();
+        len = pop();
+        if (!iostr.write) {
+            return ERR_INVALID_IO;
+        }
+        for (x = 0; x < len; x++) {
+            iostr.write(&iostr, m[x + offset]);
+            iostr.wptr++;
+        }
         break;
     case 1:
+        offset = pop();
+        len = pop();
+        if (!iostr.read) {
+            return ERR_INVALID_IO;
+        }
+        for (x = 0; x < len; x++) {
+            m[x + offset] = iostr.read(&iostr);
+            iostr.rptr++;
+        }
         break;
     case 2:
+        if (iostr.flags | FLAG_WPTR_SET) {
+            iostr.wptr = pop32();
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     case 3:
+        if (iostr.flags | FLAG_RPTR_SET) {
+            iostr.rptr = pop32();
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     case 4:
+        if (iostr.flags | FLAG_WPTR_GET) {
+            push32(iostr.wptr);
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     case 5:
+        if (iostr.flags | FLAG_RPTR_GET) {
+            push32(iostr.rptr);
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     case 6:
+        if (iostr.flags | FLAG_LENGTH) {
+            push32(iostr.length);
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     case 7:
+        if (iostr.flags | FLAG_RESET) {
+            iostr.wptr = 0;
+            iostr.rptr = 0;
+        } else {
+            return ERR_INVALID_IO;
+        }
         break;
     }
-    return ERR_UNHANDLED_INTERRUPT;
+    return 0;
 }
 
 static uint8_t interrupt(uint8_t i) {

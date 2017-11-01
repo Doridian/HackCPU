@@ -3,6 +3,7 @@
 
 #define ERR_UNHANDLED_INTERRUPT 1
 #define ERR_HALT 2
+#define ERR_INVALID_IO 3
 
 #include <stdint.h>
 

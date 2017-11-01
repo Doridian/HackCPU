@@ -395,7 +395,6 @@ uint8_t cpu_step() {
         m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase] = rrvv16.reg2val;
         break;
     case I_HALT:
-        cpu_init();
         return 0;
     case I_RESET:
         cpu_reset();

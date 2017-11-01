@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1509483275 source:c:\users\doridian\programming\codeblocks\hmcpu\main.c
+1509506798 source:c:\users\doridian\programming\codeblocks\hmcpu\main.c
 	<stdio.h>
 	<stdlib.h>
 	"cpu.h"
@@ -13,7 +13,8 @@
 	"opcodes.h"
 	"bootloader.h"
 
-1509503512 c:\users\doridian\programming\codeblocks\hmcpu\cpu.h
+1509506784 c:\users\doridian\programming\codeblocks\hmcpu\cpu.h
+	<stdint.h>
 
 1509503405 c:\users\doridian\programming\codeblocks\hmcpu\bootloader.h
 	<stdint.h>

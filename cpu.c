@@ -591,10 +591,10 @@ static uint8_t _cpu_step() {
 
 uint8_t cpu_step() {
     uint8_t res = _cpu_step();
+    uint16_t oldpc = r.pc;
     if (!res) {
         if (r.flagr & FLAG_TRAP) {
             r.flagr &= ~FLAG_TRAP;
-            uint16_t oldpc = r.pc;
             uint8_t ires = interrupt(130);
             if (ires) {
                 return ires;
@@ -603,7 +603,6 @@ uint8_t cpu_step() {
         }
         return 0;
     }
-    uint16_t oldpc = r.pc;
     if (!interrupt(129)) {
         push(oldpc);
         push(res);

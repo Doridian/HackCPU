@@ -9,8 +9,8 @@ def auto_int(s):
 parser = ArgumentParser()
 parser.add_argument('input', help='Input file', type=str)
 parser.add_argument('output', help='Output file', type=str)
-parser.add_argument('--baseaddr', default=-1, type=auto_int, dest='baseaddr', help='Base address (0 for bootloader, omit for ROM)')
-parser.add_argument('--romenc', default=None, type=auto_int, dest='romenc', help='Use ROM encryption key ROMENC')
+#parser.add_argument('--baseaddr', default=-1, type=auto_int, dest='baseaddr', help='Base address (0 for bootloader, omit for ROM)')
+#parser.add_argument('--romenc', default=None, type=auto_int, dest='romenc', help='Use ROM encryption key ROMENC')
 args = parser.parse_args()
 
 REGISTERS = {
@@ -36,11 +36,8 @@ REGISTERS = {
 
 BYTEORDER = 'little'
 
-baseaddr = args.baseaddr
-
+baseaddr = None
 enckey = None
-if args.romenc != None:
-	enckey = args.romenc.to_bytes(4, BYTEORDER)
 
 bpos = 0
 labels = {}
@@ -173,7 +170,29 @@ for line in in_f:
 	if line[0] == ":":
 		insn = Instruction(OPCODES["REM"], lsplit)
 		labels[line[1:]] = insn
-	elif line[0] != "#":
+	elif line[0] == "#":
+		doenc = len(lsplit) > 1
+		int_enckkey = 0
+		if doenc:
+			int_enckkey = int(lsplit[1], 0)
+
+		if lsplit[0] == "#ROM":
+			baseaddr = -1
+			b = (int_enckkey ^ 0xBEBADEFA).to_bytes(4, BYTEORDER)
+			out_f.write(b)
+			instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
+		elif lsplit[0] == "#BOOTLOADER":
+			baseaddr = 0
+			if doenc:
+				INOP = OPCODES["NOP"].i
+				INOP = str(INOP << 24 | INOP << 16 | INOP << 8 | INOP)
+				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("$ENCREG"), Parameter(str(int_enckkey))]))
+				instructions.append(Instruction(OPCODES["ENCON"]))
+				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
+				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@0"), Parameter(INOP)]))
+				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@4"), Parameter(INOP)]))
+				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@8"), Parameter(INOP)]))
+	else:
 		insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
 
 	if insn != None:
@@ -182,10 +201,6 @@ for line in in_f:
 if baseaddr < 0:
 	baseaddr = 0xFFFF - bpos
 	enccpos = baseaddr % 4
-
-if args.romenc != None:
-	b = (args.romenc ^ 0xBEBADEFA).to_bytes(4, BYTEORDER)
-	out_f.write(b)
 
 for insn in instructions:
 	insn.write()

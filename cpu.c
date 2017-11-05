@@ -76,8 +76,7 @@ void cpu_reset() {
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
 static uint8_t devzero_read(struct iostream_t* io) { return 0; }
 
-uint8_t dummyrom[] = { 0xFA, 0xDE, 0xBA, 0xBE, I_HALT };
-//uint8_t dummyrom[] = { 0, 0, 0, 0, I_HALT };
+uint8_t dummyrom[] = { 0x15, 0x60, 0x17, 0x60, 0xd8, 0xe9, 0xb8, 0xab, 0xd8, 0xe9, 0xb8, 0x9c };
 
 static uint8_t dummyrom_read(struct iostream_t* io) {
     return dummyrom[io->rptr];
@@ -97,7 +96,7 @@ void cpu_init() {
     // ROM
     io[IO_ROM].rptr = 0;
     io[IO_ROM].wptr = 0;
-    io[IO_ROM].length = 5;
+    io[IO_ROM].length = sizeof(dummyrom);
     io[IO_ROM].read = dummyrom_read;
     io[IO_ROM].write = 0;
     io[IO_ROM].flags = FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;

@@ -7,6 +7,6 @@ int main()
 {
     cpu_init();
     cpu_run();
-    printf("Registers: R1=%d R2=%d R3=%d R4=%d SP=%d PC=%d IHBASE=%d E=%x\n", r.r1, r.r2, r.r3, r.r4, r.sp, r.pc, r.ihbase, r.encreg12);
+    printf("Registers: R1=%d R2=%d R3=%d R4=%d SP=%d PC=%d IHBASE=%d E=%08x\n", r.r1, r.r2, r.r3, r.r4, r.sp, r.pc, r.ihbase, r.encreg12);
     return 0;
 }

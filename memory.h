@@ -5,6 +5,6 @@
 
 #define RAM_SIZE 65536
 
-static uint8_t m[RAM_SIZE];
+uint8_t m[RAM_SIZE + 8]; // Make sure accidental 32-bit writes don't corrupt R
 
 #endif // MEMORY_H_INCLUDED

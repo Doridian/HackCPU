@@ -44,7 +44,7 @@ class Parameter:
 				self.cval = src[2:]
 			elif src[1] == "$":
 				self.rval = REGISTERS["MREG"]
-				self.cval = REGISTERS[src[2:]]
+				self.cval = REGISTERS[src[2:]].to_bytes(1, BYTEORDER)
 			else:
 				self.rval = REGISTERS["MREGC"]
 				# Convert to binary
@@ -64,6 +64,8 @@ class Parameter:
 	def len(self, b32):
 		if self.cval == None:
 			return 0
+		if isinstance(self.cval, bytes):
+			return len(self.cval)
 		if self.rval == REGISTERS["CREG"] and b32:
 			return 4
 		return 2

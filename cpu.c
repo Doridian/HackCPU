@@ -76,6 +76,12 @@ void cpu_reset() {
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
 static uint8_t devzero_read(struct iostream_t* io) { return 0; }
 
+uint8_t dummyrom[] = { 0x00, 0x00, 0x00, 0x00, I_HALT };
+
+static uint8_t dummyrom_read(struct iostream_t* io) {
+    return dummyrom[io->rptr];
+}
+
 void cpu_init() {
     memclear(m, RAM_SIZE);
 
@@ -90,8 +96,8 @@ void cpu_init() {
     // ROM
     io[IO_ROM].rptr = 0;
     io[IO_ROM].wptr = 0;
-    io[IO_ROM].length = 1024;
-    io[IO_ROM].read = devzero_read;
+    io[IO_ROM].length = 5;
+    io[IO_ROM].read = dummyrom_read;
     io[IO_ROM].write = 0;
     io[IO_ROM].flags = FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;
 
@@ -117,9 +123,9 @@ void cpu_init() {
 static uint8_t iread8() {
     uint16_t opc = r.pc++;
     uint8_t raw = m[opc];
-    if (r.flagr & FLAG_ENCON) {
-        return raw ^ (uint8_t)((r.encreg12 >> (opc % 4)) & 0xFF);
-    }
+    //if (r.flagr & FLAG_ENCON) {
+    //    return raw ^ (uint8_t)((r.encreg12 >> (opc % 4)) & 0xFF);
+    //}
     return raw;
 }
 
@@ -237,8 +243,12 @@ static uint32_t pop32() {
 #define IFLTE() if   (r.flagr & (FLAG_LT|FLAG_EQ))
 #define IFGT()  if (!(r.flagr & (FLAG_LT|FLAG_EQ)))
 
-#define DOJMP() { r.pc = rrvv16.reg1val; }
-#define DOCALL() { push(r.pc); DOJMP(); }
+#define DOJMP()    DOJMPP(1);
+#define DOJMPZ()   DOJMPP(2);
+#define DOJMPP(a)  { r.pc = rrvv16.reg ## a ## val; }
+#define DOCALL()   DOCALLP(1);
+#define DOCALLZ()  DOCALLP(2);
+#define DOCALLP(a) { push(r.pc); DOJMPP(a); }
 
 #define IFZ()  if (rrvv16.reg1val == 0)
 #define IFNZ() if (rrvv16.reg1val != 0)
@@ -262,6 +272,9 @@ static uint8_t cpu_interrupt(uint8_t i) {
             return ERR_INVALID_IO;
         }
         for (x = 0; x < len; x++) {
+            if (x + offset >= RAM_SIZE) {
+                return ERR_INVALID_IO;
+            }
             iostr.write(&iostr, m[x + offset]);
             iostr.wptr++;
         }
@@ -273,6 +286,9 @@ static uint8_t cpu_interrupt(uint8_t i) {
             return ERR_INVALID_IO;
         }
         for (x = 0; x < len; x++) {
+            if (x + offset >= RAM_SIZE) {
+                return ERR_INVALID_IO;
+            }
             m[x + offset] = iostr.read(&iostr);
             iostr.rptr++;
         }
@@ -353,6 +369,10 @@ uint8_t cpu_run() {
 
 static uint8_t _cpu_step() {
     uint8_t op = iread8();
+    if (r.pc > 1024) {
+        cpu_needs_reset = 1;
+        return ERR_HALT;
+    }
     regregvalval16_t rrvv16;
     regregvalval32_t rrvv32;
 
@@ -480,10 +500,10 @@ static uint8_t _cpu_step() {
         IFLT() { DOJMP(); }
         break;
     case I_JZ:
-        IFZ() { DOJMP(); }
+        IFZ() { DOJMPZ(); }
         break;
     case I_JNZ:
-        IFNZ() { DOJMP(); }
+        IFNZ() { DOJMPZ(); }
         break;
     case I_CALL:
         DOCALL();
@@ -507,10 +527,10 @@ static uint8_t _cpu_step() {
         IFLT() { DOCALL(); }
         break;
     case I_CZ:
-        IFZ() { DOCALL(); }
+        IFZ() { DOCALLZ(); }
         break;
     case I_CNZ:
-        IFNZ() { DOCALL(); }
+        IFNZ() { DOCALLZ(); }
         break;
     case I_RETN:
         r.pc = pop();

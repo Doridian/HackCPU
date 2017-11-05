@@ -69,6 +69,7 @@ typedef union registers_t {
     uint16_t u[REGISTERS_SIZE];
     int16_t s[REGISTERS_SIZE];
 } registers_t;
-static registers_t r;
+
+registers_t r;
 
 #endif // REGISTERS_H_INCLUDED

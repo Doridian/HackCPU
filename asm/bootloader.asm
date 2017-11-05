@@ -15,13 +15,17 @@ XOR $R4 $R4
 PUSH 1
 INT 6
 POP $R1
+JNZ $R1 :haltme
+POP $R1
+CMP $R1 5
+JL :haltme
 PUSH 1
 INT 7
 MOV $R2 0xFFFF
 SUB $R2 $R1
-PUSH 1
-PUSH $R2
 PUSH $R1
+PUSH $R2
+PUSH 1
 INT 1
 MOV $R4 $R2
 SUB $R4 0x200
@@ -49,3 +53,5 @@ JNZ $ENCREG2 :romwithenc
 RETN
 :romwithenc
 ENCRETN
+:haltme
+HALT

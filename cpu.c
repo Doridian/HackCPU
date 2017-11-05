@@ -130,11 +130,11 @@ static uint8_t iread8() {
 }
 
 static uint16_t iread16() {
-    return (iread8() << 8) + iread8();
+    return iread8() + (iread8() << 8);
 }
 
 static uint32_t iread32() {
-    return (iread8() << 24) + (iread8() << 16) + (iread8() << 8) + iread8();
+    return iread8() + (iread8() << 8) + (iread8() << 16) + (iread8() << 24);
 }
 
 static regregvalval16_t ireadrrvv16() {

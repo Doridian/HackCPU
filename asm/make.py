@@ -23,7 +23,7 @@ REGISTERS = {
 	"ENCREG":  6,
 }
 
-BYTEORDER = 'big'
+BYTEORDER = 'little'
 
 baseaddr = -1
 if len(argv) > 3:

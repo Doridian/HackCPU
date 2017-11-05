@@ -4,6 +4,14 @@
 #include "registers.h"
 #include "io.h"
 
+static void stdout_write(struct iostream_t* io, uint8_t i) {
+    putc(i, stdout);
+}
+
+static uint8_t stdin_read(struct iostream_t* io) {
+    return getc(stdin);
+}
+
 static uint8_t* fhrom_data;
 static uint8_t fhrom_read(struct iostream_t* io) {
     return fhrom_data[io->rptr];
@@ -12,6 +20,7 @@ static uint8_t fhrom_read(struct iostream_t* io) {
 int main(int argc, const char **argv)
 {
     cpu_init();
+
     if (argc > 1) {
         const char *romfname = argv[1];
         FILE *romfh = fopen(romfname, "rb");
@@ -24,7 +33,11 @@ int main(int argc, const char **argv)
         fread(fhrom_data, romlen, 1, romfh);
         fclose(romfh);
     }
+    io[IO_STDOUT].write = stdout_write;
+    io[IO_STDIN].read = stdin_read;
+
     cpu_reset();
+
     cpu_run();
     printf("Registers: R1=%d R2=%d R3=%d R4=%d PSP=%d CSP=%d PC=%d IHBASE=%d E=%08x\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
     return 0;

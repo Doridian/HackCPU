@@ -76,7 +76,8 @@ void cpu_reset() {
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
 static uint8_t devzero_read(struct iostream_t* io) { return 0; }
 
-uint8_t dummyrom[] = { 0x00, 0x00, 0x00, 0x00, I_HALT };
+uint8_t dummyrom[] = { 0xFA, 0xDE, 0xBA, 0xBE, I_HALT };
+//uint8_t dummyrom[] = { 0, 0, 0, 0, I_HALT };
 
 static uint8_t dummyrom_read(struct iostream_t* io) {
     return dummyrom[io->rptr];
@@ -123,9 +124,9 @@ void cpu_init() {
 static uint8_t iread8() {
     uint16_t opc = r.pc++;
     uint8_t raw = m[opc];
-    //if (r.flagr & FLAG_ENCON) {
-    //    return raw ^ (uint8_t)((r.encreg12 >> (opc % 4)) & 0xFF);
-    //}
+    if (r.flagr & FLAG_ENCON) {
+        return raw ^ (uint8_t)((r.encreg12 >> ((opc % 4) << 3)) & 0xFF);
+    }
     return raw;
 }
 
@@ -369,10 +370,7 @@ uint8_t cpu_run() {
 
 static uint8_t _cpu_step() {
     uint8_t op = iread8();
-    if (r.pc > 1024) {
-        cpu_needs_reset = 1;
-        return ERR_HALT;
-    }
+
     regregvalval16_t rrvv16;
     regregvalval32_t rrvv32;
 
@@ -550,10 +548,10 @@ static uint8_t _cpu_step() {
         r.flagr |= FLAG_TRAP;
         break;
     case I_ENCOFF:
-        r.flagr |= FLAG_ENCON;
+        r.flagr &= ~FLAG_ENCON;
         break;
     case I_ENCON:
-        r.flagr &= ~FLAG_ENCON;
+        r.flagr |= FLAG_ENCON;
         break;
     case I_PUSHREG:
         push32(r.r12);

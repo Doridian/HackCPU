@@ -1,6 +1,17 @@
 from opcodes import *
 from sys import argv
 from math import ceil
+from argparse import ArgumentParser
+
+def auto_int(s):
+	return int(s, 0)
+
+parser = ArgumentParser()
+parser.add_argument('input', help='Input file', type=str)
+parser.add_argument('output', help='Output file', type=str)
+parser.add_argument('--baseaddr', default=-1, type=auto_int, dest='baseaddr', help='Base address (0 for bootloader, omit for ROM)')
+parser.add_argument('--romenc', default=None, type=auto_int, dest='romenc', help='Use ROM encryption key ROMENC')
+args = parser.parse_args()
 
 REGISTERS = {
 	"R1":      0,
@@ -25,16 +36,18 @@ REGISTERS = {
 
 BYTEORDER = 'little'
 
-baseaddr = -1
-if len(argv) > 3:
-	baseaddr = int(argv[3])
+baseaddr = args.baseaddr
+
+enckey = None
+if args.romenc != None:
+	enckey = args.romenc.to_bytes(4, BYTEORDER)
 
 bpos = 0
 labels = {}
 instructions = []
 
-in_f = open(argv[1], "r")
-out_f = open(argv[2], "wb")
+in_f = open(args.input, "r")
+out_f = open(args.output, "wb")
 
 class Parameter:
 	def __init__(self, src):
@@ -81,6 +94,24 @@ class Parameter:
 
 		return self.cval
 
+enccpos = 0
+def encwrite(bs):
+	global enccpos
+	global enckey
+	global out_f
+
+	if not enckey:
+		out_f.write(bs)
+		enccpos += len(bs)
+		enccpos %= 4
+		return
+
+	for b in bs:
+		out_f.write((b ^ enckey[enccpos]).to_bytes(1, BYTEORDER))
+		enccpos = enccpos + 1
+		if enccpos > 3:
+			enccpos = 0
+
 class Instruction:
 	def __init__(self, opcode, params = []):
 		global bpos
@@ -101,23 +132,29 @@ class Instruction:
 		return mylen
 
 	def write(self):
-		global out_f
+		global enckey
+
 		if self.opcode.type == IT_VIRTUAL:
+			if self.params and len(self.params) > 0:
+				if self.params[0] == ":ENABLE_ENC":
+					enckey = int(self.params[1], 0).to_bytes(4, 'little')
+				elif self.params[0] == ":DISABLE_ENC":
+					enckey = None
 			return
 
-		out_f.write(self.opcode.i.to_bytes(1, BYTEORDER))
+		encwrite(self.opcode.i.to_bytes(1, BYTEORDER))
 
 		for i in range(0, len(self.params), 2):
 			subval = 0
 			if i < len(self.params) - 1:
 				subval = self.params[i + 1].rval
-			out_f.write((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
+			encwrite((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
 
 		for i in range(0, len(self.params)):
 			cval = self.params[i].getcval(self.b32)
 			if cval == None:
 				continue
-			out_f.write(cval)
+			encwrite(cval)
 
 # params can be:
 # :LABEL to refer to a label
@@ -131,12 +168,12 @@ for line in in_f:
 		continue
 
 	insn = None
+	lsplit = line.split(' ')
 
 	if line[0] == ":":
-		insn = Instruction(OPCODES["REM"])
+		insn = Instruction(OPCODES["REM"], lsplit)
 		labels[line[1:]] = insn
 	elif line[0] != "#":
-		lsplit = line.split(' ')
 		insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
 
 	if insn != None:
@@ -144,6 +181,11 @@ for line in in_f:
 
 if baseaddr < 0:
 	baseaddr = 0xFFFF - bpos
+	enccpos = baseaddr % 4
+
+if args.romenc != None:
+	b = (args.romenc ^ 0xBEBADEFA).to_bytes(4, BYTEORDER)
+	out_f.write(b)
 
 for insn in instructions:
 	insn.write()

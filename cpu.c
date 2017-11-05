@@ -76,7 +76,7 @@ void cpu_reset() {
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
 static uint8_t devzero_read(struct iostream_t* io) { return 0; }
 
-uint8_t dummyrom[] = { 0x15, 0x60, 0x17, 0x60, 0xd8, 0xe9, 0xb8, 0xab, 0xd8, 0xe9, 0xb8, 0x9c };
+uint8_t dummyrom[] = {};
 
 static uint8_t dummyrom_read(struct iostream_t* io) {
     return dummyrom[io->rptr];

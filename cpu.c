@@ -209,25 +209,36 @@ static regregvalval32_t ireadrrvv32() {
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 static void push(uint16_t i) {
-    uint16_t* m16 = (uint16_t*)(m + r.sp);
-    r.sp += 2;
+    uint16_t* m16 = (uint16_t*)(m + r.psp);
+    r.psp += 2;
+    *m16 = i;
+}
+
+static void ipush(uint16_t i) {
+    uint16_t* m16 = (uint16_t*)(m + r.csp);
+    r.csp += 2;
     *m16 = i;
 }
 
 static void push32(uint32_t i) {
-    uint32_t* m32 = (uint32_t*)(m + r.sp);
-    r.sp += 4;
+    uint32_t* m32 = (uint32_t*)(m + r.psp);
+    r.psp += 4;
     *m32 = i;
 }
 
 static uint16_t pop() {
-    r.sp -= 2;
-    return *(uint16_t*)(m + r.sp);
+    r.psp -= 2;
+    return *(uint16_t*)(m + r.psp);
 }
 
 static uint32_t pop32() {
-    r.sp -= 4;
-    return *(uint32_t*)(m + r.sp);
+    r.psp -= 4;
+    return *(uint32_t*)(m + r.psp);
+}
+
+static uint16_t ipop() {
+    r.csp -= 2;
+    return *(uint16_t*)(m + r.csp);
 }
 
 #define DOCMP(a, b) r.flagr = (r.flagr & FLAG_NOCMP) | \
@@ -248,7 +259,7 @@ static uint32_t pop32() {
 #define DOJMPP(a)  { r.pc = rrvv16.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
-#define DOCALLP(a) { push(r.pc); DOJMPP(a); }
+#define DOCALLP(a) { ipush(r.pc); DOJMPP(a); }
 
 #define IFZ()  if (rrvv16.reg1val == 0)
 #define IFNZ() if (rrvv16.reg1val != 0)
@@ -530,7 +541,7 @@ static uint8_t _cpu_step() {
         IFNZ() { DOCALLZ(); }
         break;
     case I_RETN:
-        r.pc = pop();
+        r.pc = ipop();
         break;
         // Special
     case I_INT:
@@ -562,7 +573,7 @@ static uint8_t _cpu_step() {
         break;
     case I_ENCRETN:
         r.flagr |= FLAG_ENCON;
-        r.pc = pop();
+        r.pc = ipop();
         break;
         // 32-bit Integer Arithmetic
     case I_ADD32:

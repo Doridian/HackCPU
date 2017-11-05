@@ -18,12 +18,13 @@ REGISTERS = {
 	"R2":      1,
 	"R3":      2,
 	"R4":      3,
-	"SP":      4,
-	"PC":      5,
-	"ENCREG1": 6,
-	"ENCREG2": 7,
-	"FLAGR":   8,
-	"IHBASE":  9,
+	"PSP":     4,
+	"CSP":     5,
+	"PC":      6,
+	"FLAGR":   7,
+	"ENCREG1": 8,
+	"ENCREG2": 9,
+	"IHBASE":  10,
 
 	"CREG":    13,
 	"MREG":    14,
@@ -31,7 +32,7 @@ REGISTERS = {
 
 	"R12":     0,
 	"R34":     2,
-	"ENCREG":  6,
+	"ENCREG":  8,
 }
 
 BYTEORDER = 'little'

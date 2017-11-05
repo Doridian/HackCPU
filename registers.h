@@ -53,8 +53,10 @@ typedef union registers_t {
                 };
             };
         };
-        uint16_t sp;
+        uint16_t psp;
+        uint16_t csp;
         uint16_t pc;
+        uint16_t flagr;
         union {
             uint32_t encreg12;
             struct {
@@ -62,7 +64,6 @@ typedef union registers_t {
                 uint16_t encreg2;
             };
         };
-        uint16_t flagr;
         uint16_t ihbase;
 
     };

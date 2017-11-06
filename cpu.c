@@ -351,7 +351,7 @@ static uint8_t cpu_interrupt(uint8_t i) {
     return 0;
 }
 
-static uint8_t interrupt_nopush(uint8_t i, int32_t info) {
+static uint8_t interrupt_nopush(uint8_t i) {
     if (r.ihbase == 0) {
         return cpu_interrupt(i);
     }
@@ -361,16 +361,13 @@ static uint8_t interrupt_nopush(uint8_t i, int32_t info) {
     }
     if (i & 0b10000000) {
         push(r.pc);
-        if (info >= 0) {
-            push(info);
-        }
     }
     r.pc = newpc;
     return 0;
 }
 
-static uint8_t interrupt(uint8_t i, int32_t info) {
-    uint8_t res = interrupt_nopush(i, info);
+static uint8_t interrupt(uint8_t i) {
+    uint8_t res = interrupt_nopush(i);
     if (res == ERR_UNHANDLED_INTERRUPT) {
         push(i);
     }
@@ -553,7 +550,7 @@ static uint8_t _cpu_step() {
         break;
         // Special
     case I_INT:
-        return interrupt(rrvv16.reg1val, -1);
+        return interrupt(rrvv16.reg1val);
     case I_SETIH:
         m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase] = rrvv16.reg2val;
         break;
@@ -628,7 +625,7 @@ static uint8_t _cpu_step() {
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
     default:
-         return interrupt(INT_ILLEGAL_OPCODE, op);
+         return interrupt(INT_ILLEGAL_OPCODE);
     }
 
     return 0;
@@ -643,7 +640,7 @@ uint8_t cpu_step() {
     if (!res) {
         if (r.flagr & FLAG_TRAP) {
             r.flagr &= ~FLAG_TRAP;
-            uint8_t ires = interrupt(INT_TRAP, -1);
+            uint8_t ires = interrupt(INT_TRAP);
             if (ires) {
                 return ires;
             }
@@ -651,7 +648,8 @@ uint8_t cpu_step() {
         return 0;
     }
 
-    if (!interrupt_nopush(INT_ERR, res)) {
+    if (!interrupt_nopush(INT_ERR)) {
+        push(res);
         return 0;
     }
 

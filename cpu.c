@@ -276,7 +276,7 @@ static uint8_t cpu_interrupt(uint8_t i) {
     uint16_t offset, len, x;
 
     switch (i) {
-    case 0:
+    case INT_IO_WRITE:
         offset = pop();
         len = pop();
         if (!iostr.write) {
@@ -290,7 +290,7 @@ static uint8_t cpu_interrupt(uint8_t i) {
             iostr.wptr++;
         }
         break;
-    case 1:
+    case INT_IO_READ:
         offset = pop();
         len = pop();
         if (!iostr.read) {
@@ -304,42 +304,42 @@ static uint8_t cpu_interrupt(uint8_t i) {
             iostr.rptr++;
         }
         break;
-    case 2:
+    case INT_IO_WPTR_SET:
         if (iostr.flags | FLAG_WPTR_SET) {
             iostr.wptr = pop32();
         } else {
             return ERR_INVALID_IO;
         }
         break;
-    case 3:
+    case INT_IO_RPTR_SET:
         if (iostr.flags | FLAG_RPTR_SET) {
             iostr.rptr = pop32();
         } else {
             return ERR_INVALID_IO;
         }
         break;
-    case 4:
+    case INT_IO_WPTR_GET:
         if (iostr.flags | FLAG_WPTR_GET) {
             push32(iostr.wptr);
         } else {
             return ERR_INVALID_IO;
         }
         break;
-    case 5:
+    case INT_IO_RPTR_GET:
         if (iostr.flags | FLAG_RPTR_GET) {
             push32(iostr.rptr);
         } else {
             return ERR_INVALID_IO;
         }
         break;
-    case 6:
+    case INT_IO_LENGTH_GET:
         if (iostr.flags | FLAG_LENGTH) {
             push32(iostr.length);
         } else {
             return ERR_INVALID_IO;
         }
         break;
-    case 7:
+    case INT_IO_RESET:
         if (iostr.flags | FLAG_RESET) {
             iostr.wptr = 0;
             iostr.rptr = 0;
@@ -351,7 +351,7 @@ static uint8_t cpu_interrupt(uint8_t i) {
     return 0;
 }
 
-static uint8_t interrupt(uint8_t i, int32_t info) {
+static uint8_t interrupt_nopush(uint8_t i, int32_t info) {
     if (r.ihbase == 0) {
         return cpu_interrupt(i);
     }
@@ -367,6 +367,14 @@ static uint8_t interrupt(uint8_t i, int32_t info) {
     }
     r.pc = newpc;
     return 0;
+}
+
+static uint8_t interrupt(uint8_t i, int32_t info) {
+    uint8_t res = interrupt_nopush(i, info);
+    if (res == ERR_UNHANDLED_INTERRUPT) {
+        push(i);
+    }
+    return res;
 }
 
 uint8_t cpu_run() {
@@ -620,7 +628,7 @@ static uint8_t _cpu_step() {
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
     default:
-         return interrupt(128, op);
+         return interrupt(INT_ILLEGAL_OPCODE, op);
     }
 
     return 0;
@@ -635,14 +643,15 @@ uint8_t cpu_step() {
     if (!res) {
         if (r.flagr & FLAG_TRAP) {
             r.flagr &= ~FLAG_TRAP;
-            uint8_t ires = interrupt(130, -1);
+            uint8_t ires = interrupt(INT_TRAP, -1);
             if (ires) {
                 return ires;
             }
         }
         return 0;
     }
-    if (!interrupt(129, res)) {
+
+    if (!interrupt_nopush(INT_ERR, res)) {
         return 0;
     }
 

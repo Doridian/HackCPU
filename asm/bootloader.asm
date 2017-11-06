@@ -20,14 +20,13 @@ PUSH $R1
 PUSH $R2
 PUSH 1
 INT 1
-MOV $R4 $R2
-ADD $R4 4
-SUB $R4 0x200
-MOV $PSP $R4
+MOV $IHBASE $R2
+# We need 512 (256 * 2) space, but since we can use the ROM's first 4 bytes which are only needed to boot (enc key) and then zero'd by us
+SUB $IHBASE 508
+MOV $PSP $IHBASE
 SUB $PSP 0x100
 MOV $CSP $PSP
 SUB $CSP 0x100
-MOV $IHBASE $R4
 MOV32 $R34 @$R2
 MOV32 @$R2 0
 XOR $R3 0xDEFA

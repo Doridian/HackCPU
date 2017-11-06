@@ -174,15 +174,17 @@ for line in in_f:
 	elif line[0] == "#":
 		doenc = len(lsplit) > 1
 		int_enckkey = 0
-		if doenc:
-			int_enckkey = int(lsplit[1], 0)
 
 		if lsplit[0] == "#ROM":
+			if doenc:
+				int_enckkey = int(lsplit[1], 0)
 			baseaddr = -1
 			b = (int_enckkey ^ 0xBEBADEFA).to_bytes(4, BYTEORDER)
 			out_f.write(b)
 			instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
 		elif lsplit[0] == "#BOOTLOADER":
+			if doenc:
+				int_enckkey = int(lsplit[1], 0)
 			baseaddr = 0
 			if doenc:
 				INOP = OPCODES["NOP"].i

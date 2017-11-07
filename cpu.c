@@ -386,6 +386,10 @@ uint8_t cpu_run() {
 static uint8_t _cpu_step() {
     uint8_t op = iread8();
 
+    if (op > II_MAX) {
+        return interrupt(INT_ILLEGAL_OPCODE);
+    }
+
     regregvalval16_t rrvv16;
     regregvalval32_t rrvv32;
 
@@ -624,8 +628,11 @@ static uint8_t _cpu_step() {
     case I_DIVF:
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
+    case I_MOV8:
+        *rrvv16.reg1 = rrvv16.reg2val & 0xFF;
+        break;
     default:
-         return interrupt(INT_ILLEGAL_OPCODE);
+        return interrupt(INT_ILLEGAL_OPCODE);
     }
 
     return 0;

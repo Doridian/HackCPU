@@ -82,7 +82,10 @@ enum INSTRUCTION {
     I_SUBF,
     I_MULF,
     I_DIVF,
+    I_MOV8,
 };
+
+#define II_MAX 71
 
 enum ITYPE {
     IT_RRVV = 0,
@@ -171,6 +174,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV32,
     IT_RRVV32,
     IT_RRVV32,
+    IT_RRVV,
 };
 
 #endif // OPCODES_H_INCLUDED

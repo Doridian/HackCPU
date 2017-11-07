@@ -45,14 +45,28 @@ int main(int argc, const char **argv)
     //if (res == ERR_HALT) {
     //    return 0;
     //}
-    printf("CPU exit code: %02x", res);
+    printf("\n\n\nCPU exit code: %02x", res);
 
+    uint8_t intnum;
     switch (res) {
     case ERR_HALT:
         printf(" (Normal HALT)\n");
         break;
     case ERR_UNHANDLED_INTERRUPT:
-        printf(" (Unhandled interrupt %02x)\n", m[r.psp - 2]);
+        intnum = m[r.psp - 2];
+        printf(" (Unhandled interrupt %02x", intnum);
+        switch (intnum) {
+        case INT_ERR:
+            printf(" (CPU Error)");
+            break;
+        case INT_ILLEGAL_OPCODE:
+            printf(" (Illegal opcode %02x)", m[r.pc - 1]);
+            break;
+        case INT_TRAP:
+            printf(" (TRAP)");
+            break;
+        }
+        printf(")\n");
     }
 
     printf("Registers: R1=%04x R2=%04x R3=%04x R4=%04x PSP=%04x CSP=%04x PC=%04x IHBASE=%04x ENCREG=%08x\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);

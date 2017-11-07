@@ -43,6 +43,8 @@ for row in range(1, number_of_rows):
 		lastopid += 1
 	itypes.append('%sIT_%s,' % (INDENT, cv(row, 'Type')))
 
+
+
 f = open("../asm/opcodes.py", "w")
 f.write('''
 IT_RRVV = 0
@@ -72,6 +74,8 @@ f.write('''
 enum INSTRUCTION {
 ''' + '\n'.join(instructions) + '''
 };
+
+#define II_MAX ''' + str(lastopid) + '''
 
 enum ITYPE {
     IT_RRVV = 0,

@@ -91,5 +91,6 @@ OPCODES = {
     "SUBF": OpCode(68, IT_RRVV32),
     "MULF": OpCode(69, IT_RRVV32),
     "DIVF": OpCode(70, IT_RRVV32),
+    "MOV8": OpCode(71, IT_RRVV),
     "REM": OpCode(-1, IT_VIRTUAL),
 }

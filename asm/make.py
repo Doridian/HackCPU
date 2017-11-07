@@ -192,9 +192,6 @@ for line in in_f:
 				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("$ENCREG"), Parameter(str(int_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
 				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
-				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@0"), Parameter(INOP)]))
-				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@4"), Parameter(INOP)]))
-				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("@8"), Parameter(INOP)]))
 	else:
 		insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
 

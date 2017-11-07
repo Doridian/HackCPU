@@ -40,10 +40,10 @@ MOV32 $ENCREG $R34
 XOR $R3 $R3
 XOR $R4 $R4
 MOV $R1 $PC
+ADD $R1 2
 MOV $R2 $R1
 MOD $R2 2
 ADD $R1 $R2
-ADD $R1 2
 XOR $R2 $R2
 :erase_bootloader
 SUB $R1 2

@@ -189,6 +189,7 @@ for line in in_f:
 			if doenc:
 				INOP = OPCODES["NOP"].i
 				INOP = str(INOP << 24 | INOP << 16 | INOP << 8 | INOP)
+				instructions.append(Instruction(OPCODES["NOP"]))
 				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("$ENCREG"), Parameter(str(int_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
 				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))

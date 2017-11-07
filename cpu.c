@@ -153,6 +153,9 @@ static regregvalval16_t ireadrrvv16() {
     } else if (r1 == MREGC_ID) {
         res.reg1 = (uint16_t*)(m + iread16());
         res.reg1val = *(uint16_t*)res.reg1;
+    } else if (r1 >= REGISTERS_SIZE) {
+        res.reg1 = NULL;
+        res.reg1val = 0;
     } else {
         res.reg1val = *res.reg1;
     }
@@ -165,6 +168,9 @@ static regregvalval16_t ireadrrvv16() {
     } else if (r2 == MREGC_ID) {
         res.reg2 = (uint16_t*)(m + iread16());
         res.reg2val = *(uint16_t*)res.reg2;
+    } else if (r2 >= REGISTERS_SIZE) {
+        res.reg2 = NULL;
+        res.reg2val = 0;
     } else {
         res.reg2val = *res.reg2;
     }
@@ -187,6 +193,9 @@ static regregvalval32_t ireadrrvv32() {
     } else if (r1 == MREGC_ID) {
         res.reg1 = (uint32_t*)(m + iread16());
         res.reg1val = *(uint32_t*)res.reg1;
+    } else if (r1 >= REGISTERS_SIZE) {
+        res.reg1 = NULL;
+        res.reg1val = 0;
     } else {
         res.reg1val = *(uint32_t*)res.reg1;
     }
@@ -199,6 +208,9 @@ static regregvalval32_t ireadrrvv32() {
     } else if (r2 == MREGC_ID) {
         res.reg2 = (uint32_t*)(m + iread16());
         res.reg2val = *(uint32_t*)res.reg2;
+    } else if (r2 >= REGISTERS_SIZE) {
+        res.reg2 = NULL;
+        res.reg2val = 0;
     } else {
         res.reg2val = *(uint32_t*)res.reg2;
     }
@@ -396,9 +408,15 @@ static uint8_t _cpu_step() {
     switch (ITYPES[op]) {
     case IT_RRVV:
         rrvv16 = ireadrrvv16();
+        if (rrvv16.reg1 == NULL || rrvv16.reg2 == NULL) {
+            return ERR_INVALID_REGISTER;
+        }
         break;
     case IT_RRVV32:
         rrvv32 = ireadrrvv32();
+        if (rrvv32.reg1 == NULL || rrvv32.reg2 == NULL) {
+            return ERR_INVALID_REGISTER;
+        }
         break;
     default:
     case IT_N:

@@ -19,7 +19,7 @@
 #define FLAG_CMP   (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP (~FLAG_CMP)
 
-#define REGISTERS_SIZE 16
+#define REGISTERS_SIZE 11
 
 typedef union registers_t {
     struct {
@@ -65,7 +65,6 @@ typedef union registers_t {
             };
         };
         uint16_t ihbase;
-
     };
     uint16_t u[REGISTERS_SIZE];
     int16_t s[REGISTERS_SIZE];

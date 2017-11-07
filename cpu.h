@@ -4,6 +4,7 @@
 #define ERR_UNHANDLED_INTERRUPT 1
 #define ERR_HALT 2
 #define ERR_INVALID_IO 3
+#define ERR_INVALID_REGISTER 4
 
 #define INT_IO_WRITE 0
 #define INT_IO_READ 1

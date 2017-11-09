@@ -574,7 +574,7 @@ static uint8_t _cpu_step() {
     case I_INT:
         return interrupt(rrvv16.reg1val);
     case I_SETIH:
-        m[((rrvv16.reg1val & 0xFF) << 1) + r.ihbase] = rrvv16.reg2val;
+        *(uint16_t*)(m + ((rrvv16.reg1val & 0xFF) << 1) + r.ihbase) = rrvv16.reg2val;
         break;
     case I_HALT:
         return ERR_HALT;

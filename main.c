@@ -47,6 +47,11 @@ int main(int argc, const char **argv)
     //}
     printf("\n\n\nCPU exit code: %02x", res);
 
+    uint16_t opc = r.pc - 1;
+    if (r.pc == 0) {
+        opc = 0xFFFF;
+    }
+
     uint8_t intnum;
     switch (res) {
     case ERR_HALT:
@@ -63,7 +68,7 @@ int main(int argc, const char **argv)
             printf(" (CPU Error)");
             break;
         case INT_ILLEGAL_OPCODE:
-            printf(" (Illegal opcode %02x)", m[r.pc - 1]);
+            printf(" (Illegal opcode %02x)", m[opc]);
             break;
         case INT_TRAP:
             printf(" (TRAP)");
@@ -77,26 +82,30 @@ int main(int argc, const char **argv)
 
     printf("Registers: R1=%04x R2=%04x R3=%04x R4=%04x PSP=%04x CSP=%04x PC=%04x IHBASE=%04x ENCREG=%08x\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
 
-    printf("Memory around PC region:");
+    printf("Memory around PC(-1) region:");
     int j = 0;
-    int i = r.pc - HEXDUMP_SIZE * 8;
-    int imax = r.pc + HEXDUMP_SIZE * 8;
+    int i = opc - HEXDUMP_SIZE * 8;
+    int imax = opc + HEXDUMP_SIZE * 8;
     if (i < 0) {
         i = 0;
     }
     if (imax > RAM_SIZE) {
         imax = RAM_SIZE;
     }
+    uint16_t oopc = opc - 1;
+    if (opc == 0) {
+        oopc = 0xFFFF;
+    }
     for (; i < imax; i += HEXDUMP_SIZE) {
-        if (i == r.pc) {
+        if (i == opc) {
             printf("\n%04x |>", i);
         } else {
             printf("\n%04x | ", i);
         }
         for (j = i; j < imax && j < i + HEXDUMP_SIZE; j++) {
-            if (j == r.pc) {
+            if (j == opc) {
                 printf("%02x<", m[j]);
-            } else if (j == r.pc - 1 && j < i + (HEXDUMP_SIZE - 1)) {
+            } else if (j == oopc && j < i + (HEXDUMP_SIZE - 1)) {
                 printf("%02x>", m[j]);
             } else {
                 printf("%02x ", m[j]);

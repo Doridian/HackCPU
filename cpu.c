@@ -673,7 +673,7 @@ uint8_t cpu_step() {
         return 0;
     }
 
-    if (!interrupt_nopush(INT_ERR)) {
+    if (res != ERR_HALT && !interrupt_nopush(INT_ERR)) {
         push(res);
         return 0;
     }

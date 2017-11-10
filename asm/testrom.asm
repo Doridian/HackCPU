@@ -1,4 +1,5 @@
 #ROM 0
+:baseaddr
 NOP
 NOP
 NOP

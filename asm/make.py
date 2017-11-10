@@ -67,6 +67,8 @@ class Parameter:
 			# Convert to binary
 			self.rval = REGISTERS[src[1:]]
 			self.cval = None
+		elif src[0] == '"' and src[-1] == '"':
+			self.cval = bytes(src[1:-1], 'ascii')
 		else:
 			self.rval = REGISTERS["CREG"]
 			# Check if 32-bit mode and convert as number to binary
@@ -83,7 +85,11 @@ class Parameter:
 
 	def getcval(self, b32):
 		if isinstance(self.cval, str):
-			self.cval = labels[self.cval].bpos + baseaddr
+			lbl = labels[self.cval]
+			if isinstance(lbl, int):
+				self.cval = lbl
+			else:
+				self.cval = labels[self.cval].bpos + baseaddr
 
 		if isinstance(self.cval, int):
 			if self.rval == REGISTERS["CREG"] and b32:
@@ -120,8 +126,11 @@ class Instruction:
 		bpos += self.len()
 
 	def len(self):
-		if self.opcode.type == IT_VIRTUAL:
+		if self.opcode.name == "REM":
 			return 0
+
+		if self.opcode.name == "STR":
+			return self.params[0].len(self.b32)
 
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
@@ -131,13 +140,24 @@ class Instruction:
 
 	def write(self):
 		global enckey
+		global out_f
 
-		if self.opcode.type == IT_VIRTUAL:
+		if self.opcode.name == "REM":
 			if self.params and len(self.params) > 0:
 				if self.params[0] == ":ENABLE_ENC":
 					enckey = int(self.params[1], 0).to_bytes(4, 'little')
 				elif self.params[0] == ":DISABLE_ENC":
 					enckey = None
+			return
+
+		if self.opcode.name == "STR":
+			cval = self.params[0].getcval(self.b32)
+			if cval == None:
+				return
+			out_f.write(cval)
+			return
+
+		if self.opcode.type == IT_VIRTUAL:
 			return
 
 		encwrite(self.opcode.i.to_bytes(1, BYTEORDER))
@@ -194,13 +214,21 @@ for line in in_f:
 				instructions.append(Instruction(OPCODES["ENCON"]))
 				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
 	else:
-		insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
+		opc = OPCODES[lsplit[0]]
+		if opc.name == "STR":
+			lbl = "str_" + lsplit[1]
+			lstr = Parameter(' '.join(lsplit[2:]))
+			insn = Instruction(opc, [lstr])
+			labels[lbl] = insn
+			labels[lbl + "_len"] = lstr.len(False)
+		else:
+			insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
 
 	if insn != None:
 		instructions.append(insn)
 
 if baseaddr < 0:
-	baseaddr = 0xFFFF - bpos
+	baseaddr = 0x10000 - bpos
 	enccpos = baseaddr % 4
 
 for insn in instructions:

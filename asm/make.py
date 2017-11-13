@@ -217,7 +217,7 @@ for line in in_f:
 		opc = OPCODES[lsplit[0]]
 		if opc.name == "STR":
 			lbl = "str_" + lsplit[1]
-			lstr = Parameter(' '.join(lsplit[2:]))
+			lstr = Parameter(bytes(' '.join(lsplit[2:]), 'ascii').decode("unicode_escape"))
 			insn = Instruction(opc, [lstr])
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)

@@ -4,8 +4,8 @@ from math import ceil
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument('input', help='Input file', type=str)
-parser.add_argument('output', help='Output file', type=str)
+parser.add_argument("input", help="Input file", type=str)
+parser.add_argument("output", help="Output file", type=str)
 args = parser.parse_args()
 
 REGISTERS = {
@@ -29,7 +29,7 @@ REGISTERS = {
 	"R34":     2,
 	"ENCREG":  8,
 }
-BYTEORDER = 'little'
+BYTEORDER = "little"
 RAM_SIZE = (1024 * 1024 * 4)
 RAM_MAX_ADDR = RAM_SIZE - 1
 
@@ -40,34 +40,39 @@ bpos = 0
 labels = {}
 instructions = []
 
-labels['RAM_SIZE'] = RAM_SIZE
-labels['RAM_MAX_ADDR'] = RAM_MAX_ADDR
+labels["RAM_SIZE"] = RAM_SIZE
+labels["RAM_MAX_ADDR"] = RAM_MAX_ADDR
 
 in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
 class Parameter:
 	def __init__(self, src):
-		if src[0] == "@":
+		if src[0] == "[":
+			if src[-1] != "]":
+				raise ValueError("Missing ] after [")
+
 			if src[1] == ":":
 				self.rval = REGISTERS["MREGC"]
-				self.cval = src[2:]
-			elif src[1] == "$":
+				self.cval = src[2:-1]
+			elif src[1:-1] in REGISTERS:
 				self.rval = REGISTERS["MREG"]
-				self.cval = REGISTERS[src[2:]].to_bytes(1, BYTEORDER)
+				self.cval = REGISTERS[src[1:-1]].to_bytes(1, BYTEORDER)
 			else:
 				self.rval = REGISTERS["MREGC"]
 				# Convert to binary
-				self.cval = int(src[1:], 0)
+				self.cval = int(src[1:-1], 0)
 		elif src[0] == ":":
 			self.rval = REGISTERS["CREG"]
 			self.cval = src[1:]
-		elif src[0] == "$":
+		elif src in REGISTERS:
 			# Convert to binary
-			self.rval = REGISTERS[src[1:]]
+			self.rval = REGISTERS[src]
 			self.cval = None
-		elif src[0] == '"' and src[-1] == '"':
-			self.cval = bytes(src[1:-1], 'ascii')
+		elif src[0] == '"':
+			if src[-1] != '"' or len(src) < 2:
+				raise ValueError("Missing ending quote in string")
+			self.cval = bytes(src[1:-1], "ascii")
 		else:
 			self.rval = REGISTERS["CREG"]
 			# Check if 64-bit mode and convert as number to binary
@@ -176,8 +181,8 @@ class Instruction:
 # params can be:
 # :LABEL to refer to a label
 # @ANY to refer to "thing at this address in RAM" (can be const or Register or Label)
-# $Reg to refer to a register
-# So you can do @$R1 to "RAM value at address value of R1"
+# Reg to refer to a register
+# So you can do @R1 to "RAM value at address value of R1"
 
 for line in in_f:
 	line = line.strip()
@@ -185,7 +190,7 @@ for line in in_f:
 		continue
 
 	insn = None
-	lsplit = line.split(' ')
+	lsplit = line.split(" ")
 
 	if line[0] == ":":
 		insn = Instruction(OPCODES["REM"], lsplit)
@@ -207,14 +212,14 @@ for line in in_f:
 			baseaddr = 0
 			if doenc:
 				instructions.append(Instruction(OPCODES["NOP"]))
-				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("$ENCREG"), Parameter(str(long_enckkey))]))
+				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(long_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
 				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
 	else:
 		opc = OPCODES[lsplit[0]]
 		if opc.name == "STR":
 			lbl = "str_" + lsplit[1]
-			lstr = Parameter(bytes(' '.join(lsplit[2:]), 'ascii').decode("unicode_escape"))
+			lstr = Parameter(bytes(line[line.find(lsplit[1]) + len(lsplit[1]) + 1:], "ascii").decode("unicode_escape"))
 			insn = Instruction(opc, [lstr])
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)

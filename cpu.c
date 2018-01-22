@@ -694,6 +694,16 @@ static uint8_t _cpu_step() {
 		r.r1offset = siread8();
 		r.r2offset = siread8();
 		break;
+	case I_ROFF1:
+		r.r1offset = 0;
+		break;
+	case I_ROFF2:
+		r.r2offset = 0;
+		break;
+	case I_ROFF12:
+		r.r1offset = 0;
+		r.r2offset = 0;
+		break;
 	default:
 		return interrupt(INT_ILLEGAL_OPCODE);
 	}

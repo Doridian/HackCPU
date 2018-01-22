@@ -107,6 +107,9 @@ OPCODES = {
     "SOFF1": OpCode(79, IT_V8, "SOFF1"),
     "SOFF2": OpCode(80, IT_V8, "SOFF2"),
     "SOFF12": OpCode(81, IT_V8V8, "SOFF12"),
+    "ROFF1": OpCode(82, IT_N, "ROFF1"),
+    "ROFF2": OpCode(83, IT_N, "ROFF2"),
+    "ROFF12": OpCode(84, IT_N, "ROFF12"),
     "REM": OpCode(-1, IT_VIRTUAL, "REM"),
     "DB": OpCode(-1, IT_VIRTUAL, "DB"),
 }

@@ -29,8 +29,8 @@ REGISTERS = {
 	"R34":     2,
 	"ENCREG":  8,
 }
-
 BYTEORDER = 'little'
+RAM_SIZE = (1024 * 1024 * 4)
 
 baseaddr = None
 enckey = None
@@ -38,6 +38,8 @@ enckey = None
 bpos = 0
 labels = {}
 instructions = []
+
+labels['RAM_SIZE'] = RAM_SIZE
 
 in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
@@ -221,7 +223,7 @@ for line in in_f:
 		instructions.append(insn)
 
 if baseaddr < 0:
-	baseaddr = (1024 * 1024 * 4) - bpos
+	baseaddr = RAM_SIZE - bpos
 	enccpos = baseaddr % 8
 
 for insn in instructions:

@@ -6,6 +6,8 @@ enum INSTRUCTION {
     // Basic
     I_MOV = 0,
     I_MOV64,
+    I_MOV8,
+    I_MOV16,
     I_PUSH,
     I_POP,
     I_PUSH64,
@@ -35,6 +37,7 @@ enum INSTRUCTION {
     I_CMP64,
     I_CMP64S,
     I_CMPF,
+    I_CMP64F,
     // Flow
     I_JMP,
     I_JGE,
@@ -66,7 +69,7 @@ enum INSTRUCTION {
     I_PUSHREG,
     I_POPREG,
     I_ENCRETN,
-    // Integer Arithmetic 32bit
+    // Integer Arithmetic 64bit
     I_ADD64,
     I_SUB64,
     I_MUL64,
@@ -82,12 +85,16 @@ enum INSTRUCTION {
     I_SUBF,
     I_MULF,
     I_DIVF,
-    I_MOV8,
-    I_MOV16,
+    // Float Arithmetic 64bit
+    I_ADD64F,
+    I_SUB64F,
+    I_MUL64F,
+    I_DIV64F,
+    // Extra
     I_DEBUG,
 };
 
-#define II_MAX 73
+#define II_MAX 78
 
 enum ITYPE {
     IT_RRVV = 0,
@@ -100,6 +107,8 @@ static uint8_t ITYPES[] = {
     // Basic
     IT_RRVV,
     IT_RRVV64,
+    IT_RRVV,
+    IT_RRVV,
     IT_RRVV,
     IT_RRVV,
     IT_RRVV64,
@@ -129,6 +138,7 @@ static uint8_t ITYPES[] = {
     IT_RRVV64,
     IT_RRVV64,
     IT_RRVV,
+    IT_RRVV64,
     // Flow
     IT_RRVV,
     IT_RRVV,
@@ -160,7 +170,7 @@ static uint8_t ITYPES[] = {
     IT_N,
     IT_N,
     IT_N,
-    // Integer Arithmetic 32bit
+    // Integer Arithmetic 64bit
     IT_RRVV64,
     IT_RRVV64,
     IT_RRVV64,
@@ -176,8 +186,12 @@ static uint8_t ITYPES[] = {
     IT_RRVV,
     IT_RRVV,
     IT_RRVV,
+    // Float Arithmetic 64bit
     IT_RRVV,
     IT_RRVV,
+    IT_RRVV,
+    IT_RRVV,
+    // Extra
     IT_N,
 };
 

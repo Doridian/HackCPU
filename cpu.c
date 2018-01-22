@@ -401,7 +401,7 @@ uint8_t cpu_run() {
 }
 
 static uint8_t _cpu_step() {
-    uint8_t op = iread8();
+	uint8_t op = iread8();
 
     if (op > II_MAX) {
         return interrupt(INT_ILLEGAL_OPCODE);
@@ -451,7 +451,7 @@ static uint8_t _cpu_step() {
     case I_NOP:
         // NOP
         break;
-        // 16-bit Arithmetic
+        // 32-bit Arithmetic
     case I_ADD:
         *rrvv32.reg1s += rrvv32.reg2vals;
         break;
@@ -515,8 +515,11 @@ static uint8_t _cpu_step() {
         DOCMP(rrvv64.reg1vals, rrvv64.reg2vals);
         break;
     case I_CMPF:
-        DOCMP(rrvv64.reg1valf, rrvv64.reg2valf);
+        DOCMP(rrvv32.reg1valf, rrvv32.reg2valf);
         break;
+	case I_CMP64F:
+		DOCMP(rrvv64.reg1valf, rrvv64.reg2valf);
+		break;
         // Flow
     case I_JMP:
         DOJMP();
@@ -607,7 +610,7 @@ static uint8_t _cpu_step() {
         r.flagr |= FLAG_ENCON;
         r.pc = ipop();
         break;
-        // 32-bit Integer Arithmetic
+        // 64-bit Integer Arithmetic
     case I_ADD64:
         *rrvv64.reg1s += rrvv64.reg2vals;
         break;
@@ -651,11 +654,24 @@ static uint8_t _cpu_step() {
     case I_DIVF:
         *rrvv32.reg1f /= rrvv32.reg2valf;
         break;
+		// 64-bit Float Arithmetic
+	case I_ADD64F:
+		*rrvv64.reg1f += rrvv64.reg2valf;
+		break;
+	case I_SUB64F:
+		*rrvv64.reg1f -= rrvv64.reg2valf;
+		break;
+	case I_MUL64F:
+		*rrvv64.reg1f *= rrvv64.reg2valf;
+		break;
+	case I_DIV64F:
+		*rrvv64.reg1f /= rrvv64.reg2valf;
+		break;
     case I_MOV8:
-        *rrvv32.reg1 = rrvv32.reg2val & 0xFF;
+        *(uint8_t*)rrvv32.reg1 = rrvv32.reg2val & 0xFF;
         break;
     case I_MOV16:
-        *rrvv32.reg1 = rrvv32.reg2val & 0xFFFF;
+		*(uint16_t*)rrvv32.reg1 = rrvv32.reg2val & 0xFFFF;
         break;
     case I_DEBUG:
         printf("Registers:\nR1=%08x R2=%08x R3=%08x R4=%08x R5=%08x R6=%08x\nPSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016I64x\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);

@@ -26,8 +26,8 @@ static uint8_t fhrom_read(struct iostream_t* io) {
 int main(int argc, const char **argv) {
     cpu_init();
 
-    //if (argc > 1) {
-		const char *romfname = "C:/Users/Doridian/Programming/CodeBlocks/HMCPU/asm/testrom.bin"; //argv[1];
+    if (argc > 1) {
+		const char *romfname = argv[1];
         FILE *romfh = fopen(romfname, "rb");
         fseek(romfh, 0L, SEEK_END);
         size_t romlen = ftell(romfh);
@@ -37,7 +37,7 @@ int main(int argc, const char **argv) {
         fhrom_data = malloc(romlen);
         fread(fhrom_data, romlen, 1, romfh);
         fclose(romfh);
-    //}
+    }
     io[IO_STDOUT].write = stdout_write;
     io[IO_STDIN].read = stdin_read;
 

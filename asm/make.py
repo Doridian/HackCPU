@@ -14,13 +14,16 @@ REGISTERS = {
 	"R2":      1,
 	"R3":      2,
 	"R4":      3,
-	"PSP":     4,
-	"CSP":     5,
-	"PC":      6,
-	"FLAGR":   7,
-	"ENCREG1": 8,
-	"ENCREG2": 9,
-	"IHBASE":  10,
+	"R5":      4,
+	"R6":      5,
+
+	"PSP":     6,
+	"CSP":     7,
+	"PC":      8,
+	"FLAGR":   9,
+	"ENCREG1": 10,
+	"ENCREG2": 11,
+	"IHBASE":  12,
 
 	"CREG":    13,
 	"MREG":    14,
@@ -28,7 +31,8 @@ REGISTERS = {
 
 	"R12":     0,
 	"R34":     2,
-	"ENCREG":  8,
+	"R56":     4,
+	"ENCREG":  10,
 }
 BYTEORDER = "little"
 RAM_SIZE = (1024 * 1024 * 4)
@@ -153,7 +157,7 @@ class Instruction:
 					enckey = None
 			return
 
-		if self.opcode.name == "STR":
+		if self.opcode.name == "DB":
 			cval = self.params[0].getcval(self.b64)
 			if cval == None:
 				return

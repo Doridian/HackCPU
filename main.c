@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -21,12 +23,11 @@ static uint8_t fhrom_read(struct iostream_t* io) {
 
 #define HEXDUMP_SIZE 12
 
-int main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
     cpu_init();
 
-    if (argc > 1) {
-        const char *romfname = argv[1];
+    //if (argc > 1) {
+		const char *romfname = "C:/Users/Doridian/Programming/CodeBlocks/HMCPU/asm/testrom.bin"; //argv[1];
         FILE *romfh = fopen(romfname, "rb");
         fseek(romfh, 0L, SEEK_END);
         size_t romlen = ftell(romfh);
@@ -36,7 +37,7 @@ int main(int argc, const char **argv)
         fhrom_data = malloc(romlen);
         fread(fhrom_data, romlen, 1, romfh);
         fclose(romfh);
-    }
+    //}
     io[IO_STDOUT].write = stdout_write;
     io[IO_STDIN].read = stdin_read;
 
@@ -65,7 +66,11 @@ int main(int argc, const char **argv)
         printf(" (Invalid register access)\n");
         break;
     case ERR_UNHANDLED_INTERRUPT:
-        intnum = m[r.psp - 2];
+		if (r.psp > 2 && r.psp <= RAM_SIZE) {
+			intnum = m[r.psp - 2];
+		} else {
+			intnum = 0xFF;
+		}
         printf(" (Unhandled interrupt %02x", intnum);
         switch (intnum) {
         case INT_ERR:
@@ -84,7 +89,7 @@ int main(int argc, const char **argv)
         printf("\n");
     }
 
-    printf("Registers: R1=%08x R2=%08x R3=%08x R4=%08x PSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
+    printf("Registers:\nR1=%08x R2=%08x R3=%08x R4=%08x R5=%08x R6=%08x\nPSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
 
     printf("Memory around PC(-1) region:");
     int j = 0;

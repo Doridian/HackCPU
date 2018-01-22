@@ -19,8 +19,9 @@
 #define FLAG_CMP   (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP (~FLAG_CMP)
 
-#define REGISTERS_SIZE 11
+#define REGISTERS_SIZE 13
 
+#pragma pack(push, 1)
 typedef union registers_t {
     struct {
         union {
@@ -48,10 +49,29 @@ typedef union registers_t {
                 union {
                     uint32_t r3;
                     int32_t r3s;
+                    float r3f;
                 };
                 union {
                     uint32_t r4;
                     int32_t r4s;
+                    float r4f;
+                };
+            };
+        };
+        union {
+            uint64_t r56;
+            int64_t r56s;
+            double r56f;
+            struct {
+                union {
+                    uint32_t r5;
+                    int32_t r5s;
+                    float r5f;
+                };
+                union {
+                    uint32_t r6;
+                    int32_t r6s;
+                    float r6f;
                 };
             };
         };
@@ -71,6 +91,7 @@ typedef union registers_t {
     uint32_t u[REGISTERS_SIZE];
     int32_t s[REGISTERS_SIZE];
 } registers_t;
+#pragma pack(pop)
 
 registers_t r;
 

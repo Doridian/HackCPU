@@ -10,13 +10,7 @@
 uint8_t cpu_needs_reset = 1;
 
 static void memclear(void *ptr, size_t num) {
-    size_t *ptrw = (size_t *)ptr;
-    size_t numw  = (num & -sizeof(size_t)) / sizeof(size_t);
-    while (numw--) {
-        *ptrw++ = 0;
-    }
-    num &= (sizeof(size_t) - 1);
-    uint8_t *ptrb = (uint8_t *)ptrw;
+    uint8_t *ptrb = (uint8_t *)ptr;
     while (num--) {
         *ptrb++ = 0;
     }
@@ -80,7 +74,7 @@ void cpu_reset() {
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
 static uint8_t devzero_read(struct iostream_t* io) { return 0; }
 
-uint8_t dummyrom[] = {};
+uint8_t dummyrom[1] = { 0x00 };
 
 static uint8_t dummyrom_read(struct iostream_t* io) {
     return dummyrom[io->rptr];
@@ -126,6 +120,10 @@ void cpu_init() {
 
 static uint8_t iread8() {
     uint32_t opc = r.pc++;
+	if (opc >= RAM_SIZE) {
+		r.pc = 1;
+		opc = 0;
+	}
     uint8_t raw = m[opc];
     if (r.flagr & FLAG_ENCON) {
         return raw ^ (uint8_t)((r.encreg12 >> ((opc % 8) << 3)) & 0xFF);
@@ -325,14 +323,14 @@ static uint8_t cpu_interrupt(uint8_t i) {
         break;
     case INT_IO_WPTR_SET:
         if (iostr.flags | FLAG_WPTR_SET) {
-            iostr.wptr = pop64();
+            iostr.wptr = pop();
         } else {
             return ERR_INVALID_IO;
         }
         break;
     case INT_IO_RPTR_SET:
         if (iostr.flags | FLAG_RPTR_SET) {
-            iostr.rptr = pop64();
+            iostr.rptr = pop();
         } else {
             return ERR_INVALID_IO;
         }
@@ -660,6 +658,7 @@ static uint8_t _cpu_step() {
         *rrvv32.reg1 = rrvv32.reg2val & 0xFFFF;
         break;
     case I_DEBUG:
+        printf("Registers:\nR1=%08x R2=%08x R3=%08x R4=%08x R5=%08x R6=%08x\nPSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016I64x\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
         break;
     default:
         return interrupt(INT_ILLEGAL_OPCODE);

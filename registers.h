@@ -24,50 +24,52 @@
 typedef union registers_t {
     struct {
         union {
-            uint32_t r12;
-            int32_t r12s;
-            float r12f;
+            uint64_t r12;
+            int64_t r12s;
+            double r12f;
             struct {
                 union {
-                    uint16_t r1;
-                    int16_t r1s;
+                    uint32_t r1;
+                    int32_t r1s;
+                    float r1f;
                 };
                 union {
-                    uint16_t r2;
-                    int16_t r2s;
+                    uint32_t r2;
+                    int32_t r2s;
+                    float r2f;
                 };
             };
         };
         union {
-            uint32_t r34;
-            int32_t r34s;
-            float r34f;
+            uint64_t r34;
+            int64_t r34s;
+            double r34f;
             struct {
                 union {
-                    uint16_t r3;
-                    int16_t r3s;
+                    uint32_t r3;
+                    int32_t r3s;
                 };
                 union {
-                    uint16_t r4;
-                    int16_t r4s;
+                    uint32_t r4;
+                    int32_t r4s;
                 };
             };
         };
-        uint16_t psp;
-        uint16_t csp;
-        uint16_t pc;
-        uint16_t flagr;
+        uint32_t psp;
+        uint32_t csp;
+        uint32_t pc;
+        uint32_t flagr;
         union {
-            uint32_t encreg12;
+            uint64_t encreg12;
             struct {
-                uint16_t encreg1;
-                uint16_t encreg2;
+                uint32_t encreg1;
+                uint32_t encreg2;
             };
         };
-        uint16_t ihbase;
+        uint32_t ihbase;
     };
-    uint16_t u[REGISTERS_SIZE];
-    int16_t s[REGISTERS_SIZE];
+    uint32_t u[REGISTERS_SIZE];
+    int32_t s[REGISTERS_SIZE];
 } registers_t;
 
 registers_t r;

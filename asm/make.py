@@ -3,14 +3,9 @@ from sys import argv
 from math import ceil
 from argparse import ArgumentParser
 
-def auto_int(s):
-	return int(s, 0)
-
 parser = ArgumentParser()
 parser.add_argument('input', help='Input file', type=str)
 parser.add_argument('output', help='Output file', type=str)
-#parser.add_argument('--baseaddr', default=-1, type=auto_int, dest='baseaddr', help='Base address (0 for bootloader, omit for ROM)')
-#parser.add_argument('--romenc', default=None, type=auto_int, dest='romenc', help='Use ROM encryption key ROMENC')
 args = parser.parse_args()
 
 REGISTERS = {
@@ -71,19 +66,19 @@ class Parameter:
 			self.cval = bytes(src[1:-1], 'ascii')
 		else:
 			self.rval = REGISTERS["CREG"]
-			# Check if 32-bit mode and convert as number to binary
+			# Check if 64-bit mode and convert as number to binary
 			self.cval = int(src, 0)
 
-	def len(self, b32):
+	def len(self, b64):
 		if self.cval == None:
 			return 0
 		if isinstance(self.cval, bytes):
 			return len(self.cval)
-		if self.rval == REGISTERS["CREG"] and b32:
-			return 4
-		return 2
+		if self.rval == REGISTERS["CREG"] and b64:
+			return 8
+		return 4
 
-	def getcval(self, b32):
+	def getcval(self, b64):
 		if isinstance(self.cval, str):
 			lbl = labels[self.cval]
 			if isinstance(lbl, int):
@@ -92,9 +87,9 @@ class Parameter:
 				self.cval = labels[self.cval].bpos + baseaddr
 
 		if isinstance(self.cval, int):
-			if self.rval == REGISTERS["CREG"] and b32:
-				return self.cval.to_bytes(4, BYTEORDER)
-			return self.cval.to_bytes(2, BYTEORDER)
+			if self.rval == REGISTERS["CREG"] and b64:
+				return self.cval.to_bytes(8, BYTEORDER)
+			return self.cval.to_bytes(4, BYTEORDER)
 
 		return self.cval
 
@@ -107,13 +102,13 @@ def encwrite(bs):
 	if not enckey:
 		out_f.write(bs)
 		enccpos += len(bs)
-		enccpos %= 4
+		enccpos %= 8
 		return
 
 	for b in bs:
 		out_f.write((b ^ enckey[enccpos]).to_bytes(1, BYTEORDER))
 		enccpos = enccpos + 1
-		if enccpos > 3:
+		if enccpos > 7:
 			enccpos = 0
 
 class Instruction:
@@ -122,7 +117,7 @@ class Instruction:
 		self.opcode = opcode
 		self.params = params
 		self.bpos = bpos
-		self.b32 = self.opcode.type == IT_RRVV32
+		self.b64 = self.opcode.type == IT_RRVV64
 		bpos += self.len()
 
 	def len(self):
@@ -130,11 +125,11 @@ class Instruction:
 			return 0
 
 		if self.opcode.name == "STR":
-			return self.params[0].len(self.b32)
+			return self.params[0].len(self.b64)
 
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
-			mylen += self.params[i].len(self.b32)
+			mylen += self.params[i].len(self.b64)
 
 		return mylen
 
@@ -145,13 +140,13 @@ class Instruction:
 		if self.opcode.name == "REM":
 			if self.params and len(self.params) > 0:
 				if self.params[0] == ":ENABLE_ENC":
-					enckey = int(self.params[1], 0).to_bytes(4, 'little')
+					enckey = int(self.params[1], 0).to_bytes(8, 'little')
 				elif self.params[0] == ":DISABLE_ENC":
 					enckey = None
 			return
 
 		if self.opcode.name == "STR":
-			cval = self.params[0].getcval(self.b32)
+			cval = self.params[0].getcval(self.b64)
 			if cval == None:
 				return
 			out_f.write(cval)
@@ -169,7 +164,7 @@ class Instruction:
 			encwrite((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
 
 		for i in range(0, len(self.params)):
-			cval = self.params[i].getcval(self.b32)
+			cval = self.params[i].getcval(self.b64)
 			if cval == None:
 				continue
 			encwrite(cval)
@@ -193,26 +188,24 @@ for line in in_f:
 		labels[line[1:]] = insn
 	elif line[0] == "#":
 		doenc = len(lsplit) > 1
-		int_enckkey = 0
+		long_enckkey = int(0)
 
 		if lsplit[0] == "#ROM":
 			if doenc:
-				int_enckkey = int(lsplit[1], 0)
+				long_enckkey = int(lsplit[1], 0)
 			baseaddr = -1
-			b = (int_enckkey ^ 0xBEBADEFA).to_bytes(4, BYTEORDER)
+			b = (long_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
 			out_f.write(b)
-			instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
+			instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
 		elif lsplit[0] == "#BOOTLOADER":
 			if doenc:
-				int_enckkey = int(lsplit[1], 0)
+				long_enckkey = int(lsplit[1], 0)
 			baseaddr = 0
 			if doenc:
-				INOP = OPCODES["NOP"].i
-				INOP = str(INOP << 24 | INOP << 16 | INOP << 8 | INOP)
 				instructions.append(Instruction(OPCODES["NOP"]))
-				instructions.append(Instruction(OPCODES["MOV32"], [Parameter("$ENCREG"), Parameter(str(int_enckkey))]))
+				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("$ENCREG"), Parameter(str(long_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
-				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(int_enckkey)]))
+				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
 	else:
 		opc = OPCODES[lsplit[0]]
 		if opc.name == "STR":
@@ -229,7 +222,7 @@ for line in in_f:
 
 if baseaddr < 0:
 	baseaddr = 0x10000 - bpos
-	enccpos = baseaddr % 4
+	enccpos = baseaddr % 8
 
 for insn in instructions:
 	insn.write()

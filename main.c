@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "cpu.h"
 #include "registers.h"
 #include "io.h"
@@ -80,7 +81,7 @@ int main(int argc, const char **argv)
         printf("\n");
     }
 
-    printf("Registers: R1=%04x R2=%04x R3=%04x R4=%04x PSP=%04x CSP=%04x PC=%04x IHBASE=%04x ENCREG=%08x\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
+    printf("Registers: R1=%08x R2=%08x R3=%08x R4=%08x PSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
 
     printf("Memory around PC(-1) region:");
     int j = 0;

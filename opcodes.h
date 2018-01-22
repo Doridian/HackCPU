@@ -5,11 +5,11 @@
 enum INSTRUCTION {
     // Basic
     I_MOV = 0,
-    I_MOV32,
+    I_MOV64,
     I_PUSH,
     I_POP,
-    I_PUSH32,
-    I_POP32,
+    I_PUSH64,
+    I_POP64,
     I_NOP,
     // Integer Arithmetic
     I_ADD,
@@ -32,8 +32,8 @@ enum INSTRUCTION {
     // Compare
     I_CMP,
     I_CMPS,
-    I_CMP32,
-    I_CMP32S,
+    I_CMP64,
+    I_CMP64S,
     I_CMPF,
     // Flow
     I_JMP,
@@ -67,41 +67,42 @@ enum INSTRUCTION {
     I_POPREG,
     I_ENCRETN,
     // Integer Arithmetic 32bit
-    I_ADD32,
-    I_SUB32,
-    I_MUL32,
-    I_DIV32,
-    I_MOD32,
-    I_SHL32,
-    I_LSHR32,
-    I_ASHR32,
-    I_MULU32,
-    I_DIVU32,
+    I_ADD64,
+    I_SUB64,
+    I_MUL64,
+    I_DIV64,
+    I_MOD64,
+    I_SHL64,
+    I_LSHR64,
+    I_ASHR64,
+    I_MULU64,
+    I_DIVU64,
     // Float Arithmetic 32bit
     I_ADDF,
     I_SUBF,
     I_MULF,
     I_DIVF,
     I_MOV8,
+    I_MOV16,
 };
 
-#define II_MAX 71
+#define II_MAX 72
 
 enum ITYPE {
     IT_RRVV = 0,
     IT_N,
-    IT_RRVV32,
+    IT_RRVV64,
     IT_INVALID
 };
 
 static uint8_t ITYPES[] = {
     // Basic
     IT_RRVV,
-    IT_RRVV32,
+    IT_RRVV64,
     IT_RRVV,
     IT_RRVV,
-    IT_RRVV32,
-    IT_RRVV32,
+    IT_RRVV64,
+    IT_RRVV64,
     IT_N,
     // Integer Arithmetic
     IT_RRVV,
@@ -124,9 +125,9 @@ static uint8_t ITYPES[] = {
     // Compare
     IT_RRVV,
     IT_RRVV,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV,
     // Flow
     IT_RRVV,
     IT_RRVV,
@@ -159,21 +160,22 @@ static uint8_t ITYPES[] = {
     IT_N,
     IT_N,
     // Integer Arithmetic 32bit
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
+    IT_RRVV64,
     // Float Arithmetic 32bit
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
-    IT_RRVV32,
+    IT_RRVV,
+    IT_RRVV,
+    IT_RRVV,
+    IT_RRVV,
+    IT_RRVV,
     IT_RRVV,
 };
 

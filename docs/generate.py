@@ -49,7 +49,7 @@ f = open("../asm/opcodes.py", "w")
 f.write('''
 IT_RRVV = 0
 IT_N = 1
-IT_RRVV32 = 2
+IT_RRVV64 = 2
 IT_INVALID = 3
 IT_VIRTUAL = 4
 
@@ -82,7 +82,7 @@ enum INSTRUCTION {
 enum ITYPE {
     IT_RRVV = 0,
     IT_N,
-    IT_RRVV32,
+    IT_RRVV64,
     IT_INVALID
 };
 

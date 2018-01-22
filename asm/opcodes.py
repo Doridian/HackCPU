@@ -1,7 +1,7 @@
 
 IT_RRVV = 0
 IT_N = 1
-IT_RRVV32 = 2
+IT_RRVV64 = 2
 IT_INVALID = 3
 IT_VIRTUAL = 4
 
@@ -15,11 +15,11 @@ class OpCode:
 OPCODES = {
     # Basic
     "MOV": OpCode(0, IT_RRVV, "MOV"),
-    "MOV32": OpCode(1, IT_RRVV32, "MOV32"),
+    "MOV64": OpCode(1, IT_RRVV64, "MOV64"),
     "PUSH": OpCode(2, IT_RRVV, "PUSH"),
     "POP": OpCode(3, IT_RRVV, "POP"),
-    "PUSH32": OpCode(4, IT_RRVV32, "PUSH32"),
-    "POP32": OpCode(5, IT_RRVV32, "POP32"),
+    "PUSH64": OpCode(4, IT_RRVV64, "PUSH64"),
+    "POP64": OpCode(5, IT_RRVV64, "POP64"),
     "NOP": OpCode(6, IT_N, "NOP"),
     # Integer Arithmetic
     "ADD": OpCode(7, IT_RRVV, "ADD"),
@@ -42,9 +42,9 @@ OPCODES = {
     # Compare
     "CMP": OpCode(23, IT_RRVV, "CMP"),
     "CMPS": OpCode(24, IT_RRVV, "CMPS"),
-    "CMP32": OpCode(25, IT_RRVV32, "CMP32"),
-    "CMP32S": OpCode(26, IT_RRVV32, "CMP32S"),
-    "CMPF": OpCode(27, IT_RRVV32, "CMPF"),
+    "CMP64": OpCode(25, IT_RRVV64, "CMP64"),
+    "CMP64S": OpCode(26, IT_RRVV64, "CMP64S"),
+    "CMPF": OpCode(27, IT_RRVV, "CMPF"),
     # Flow
     "JMP": OpCode(28, IT_RRVV, "JMP"),
     "JGE": OpCode(29, IT_RRVV, "JGE"),
@@ -77,22 +77,23 @@ OPCODES = {
     "POPREG": OpCode(55, IT_N, "POPREG"),
     "ENCRETN": OpCode(56, IT_N, "ENCRETN"),
     # Integer Arithmetic 32bit
-    "ADD32": OpCode(57, IT_RRVV32, "ADD32"),
-    "SUB32": OpCode(58, IT_RRVV32, "SUB32"),
-    "MUL32": OpCode(59, IT_RRVV32, "MUL32"),
-    "DIV32": OpCode(60, IT_RRVV32, "DIV32"),
-    "MOD32": OpCode(61, IT_RRVV32, "MOD32"),
-    "SHL32": OpCode(62, IT_RRVV32, "SHL32"),
-    "LSHR32": OpCode(63, IT_RRVV32, "LSHR32"),
-    "ASHR32": OpCode(64, IT_RRVV32, "ASHR32"),
-    "MULU32": OpCode(65, IT_RRVV32, "MULU32"),
-    "DIVU32": OpCode(66, IT_RRVV32, "DIVU32"),
+    "ADD64": OpCode(57, IT_RRVV64, "ADD64"),
+    "SUB64": OpCode(58, IT_RRVV64, "SUB64"),
+    "MUL64": OpCode(59, IT_RRVV64, "MUL64"),
+    "DIV64": OpCode(60, IT_RRVV64, "DIV64"),
+    "MOD64": OpCode(61, IT_RRVV64, "MOD64"),
+    "SHL64": OpCode(62, IT_RRVV64, "SHL64"),
+    "LSHR64": OpCode(63, IT_RRVV64, "LSHR64"),
+    "ASHR64": OpCode(64, IT_RRVV64, "ASHR64"),
+    "MULU64": OpCode(65, IT_RRVV64, "MULU64"),
+    "DIVU64": OpCode(66, IT_RRVV64, "DIVU64"),
     # Float Arithmetic 32bit
-    "ADDF": OpCode(67, IT_RRVV32, "ADDF"),
-    "SUBF": OpCode(68, IT_RRVV32, "SUBF"),
-    "MULF": OpCode(69, IT_RRVV32, "MULF"),
-    "DIVF": OpCode(70, IT_RRVV32, "DIVF"),
+    "ADDF": OpCode(67, IT_RRVV, "ADDF"),
+    "SUBF": OpCode(68, IT_RRVV, "SUBF"),
+    "MULF": OpCode(69, IT_RRVV, "MULF"),
+    "DIVF": OpCode(70, IT_RRVV, "DIVF"),
     "MOV8": OpCode(71, IT_RRVV, "MOV8"),
+    "MOV16": OpCode(72, IT_RRVV, "MOV16"),
     "REM": OpCode(-1, IT_VIRTUAL, "REM"),
     "STR": OpCode(-1, IT_VIRTUAL, "STR"),
 }

@@ -19,7 +19,7 @@ instructions_py = []
 instructions = []
 itypes = []
 
-INDENT = '    '
+INDENT = '	'
 
 lastopid = -1
 for row in range(1, number_of_rows):
@@ -64,8 +64,8 @@ class OpCode:
 
 OPCODES = {
 ''' + '\n'.join(instructions_py) + '''
-    "REM": OpCode(-1, IT_VIRTUAL, "REM"),
-    "DB": OpCode(-1, IT_VIRTUAL, "DB"),
+	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
+	"DB": OpCode(-1, IT_VIRTUAL, "DB"),
 }
 ''')
 f.close()
@@ -82,12 +82,12 @@ enum INSTRUCTION {
 #define II_MAX ''' + str(lastopid) + '''
 
 enum ITYPE {
-    IT_RRVV = 0,
-    IT_N,
-    IT_RRVV64,
-    IT_V8,
-    IT_V8V8,
-    IT_INVALID
+	IT_RRVV = 0,
+	IT_N,
+	IT_RRVV64,
+	IT_V8,
+	IT_V8V8,
+	IT_INVALID
 };
 
 static uint8_t ITYPES[] = {

@@ -31,6 +31,7 @@ REGISTERS = {
 }
 BYTEORDER = 'little'
 RAM_SIZE = (1024 * 1024 * 4)
+RAM_MAX_ADDR = RAM_SIZE - 1
 
 baseaddr = None
 enckey = None
@@ -40,6 +41,7 @@ labels = {}
 instructions = []
 
 labels['RAM_SIZE'] = RAM_SIZE
+labels['RAM_MAX_ADDR'] = RAM_MAX_ADDR
 
 in_f = open(args.input, "r")
 out_f = open(args.output, "wb")

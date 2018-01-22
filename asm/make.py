@@ -144,7 +144,7 @@ class Instruction:
 		if self.opcode.name == "REM":
 			if self.params and len(self.params) > 0:
 				if self.params[0] == ":ENABLE_ENC":
-					enckey = int(self.params[1], 0).to_bytes(8, 'little')
+					enckey = int(self.params[1], 0).to_bytes(8, BYTEORDER)
 				elif self.params[0] == ":DISABLE_ENC":
 					enckey = None
 			return

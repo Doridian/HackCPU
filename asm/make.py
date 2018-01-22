@@ -20,7 +20,7 @@ REGISTERS = {
 	"PSP":     6,
 	"CSP":     7,
 	"PC":      8,
-	"FLAGR":   9,
+	"MSR":     9,
 	"ENCREG1": 10,
 	"ENCREG2": 11,
 	"IHBASE":  12,
@@ -168,6 +168,11 @@ class Instruction:
 			return
 
 		encwrite(self.opcode.i.to_bytes(1, BYTEORDER))
+
+		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
+			for i in range(0, len(self.params)):
+				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER))
+			return
 
 		for i in range(0, len(self.params), 2):
 			subval = 0

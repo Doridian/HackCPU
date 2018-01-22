@@ -52,6 +52,8 @@ IT_N = 1
 IT_RRVV64 = 2
 IT_INVALID = 3
 IT_VIRTUAL = 4
+IT_V8 = 5
+IT_V8V8 = 6
 
 class OpCode:
 	def __init__(self, i, itype, iname):
@@ -83,6 +85,8 @@ enum ITYPE {
     IT_RRVV = 0,
     IT_N,
     IT_RRVV64,
+    IT_V8,
+    IT_V8V8,
     IT_INVALID
 };
 

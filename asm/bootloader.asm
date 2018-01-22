@@ -16,7 +16,7 @@ CMP $R1 5
 JL :haltme
 PUSH 1
 INT 7
-MOV $R2 0xFFFF
+MOV $R2 4194303
 SUB $R2 $R1
 ADD $R2 1
 PUSH $R1
@@ -25,8 +25,8 @@ PUSH 1
 INT 1
 
 MOV $IHBASE $R2
-# We need 512 (256 * 2) space, but since we can use the ROM's first 4 bytes which are only needed to boot (enc key) and then zero'd by us
-SUB $IHBASE 508
+# We need 4096 (2048 * 2) space, but since we can use the ROM's first 4 bytes which are only needed to boot (enc key) and then zero'd by us
+SUB $IHBASE 4092
 
 MOV $PSP $IHBASE
 SUB $PSP 0x100
@@ -35,8 +35,10 @@ SUB $CSP 0x100
 
 MOV64 $R34 @$R2
 MOV64 @$R2 0
+DEBUG
 XOR $R3 0xBEBADEFA
 XOR $R4 0x0BB0FECA
+DEBUG
 
 ADD $R2 8
 MOV @$CSP $R2
@@ -65,8 +67,10 @@ MOV @$R1 0
 JNZ $R1 :erase_bootloader
 JNZ $ENCREG1 :romwithenc
 JNZ $ENCREG2 :romwithenc
+DEBUG
 RETN
 :romwithenc
+DEBUG
 ENCRETN
 :haltme
 HALT

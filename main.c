@@ -48,15 +48,18 @@ int main(int argc, const char **argv)
     //}
     printf("\n\n\nCPU exit code: %02x", res);
 
-    uint16_t opc = r.pc - 1;
+    uint32_t opc = r.pc - 1;
     if (r.pc == 0) {
-        opc = 0xFFFF;
+        opc = RAM_SIZE - 1;
     }
 
     uint8_t intnum;
     switch (res) {
     case ERR_HALT:
         printf(" (Normal HALT)\n");
+        break;
+    case ERR_INVALID_IO:
+        printf(" (Invalid I/O)\n");
         break;
     case ERR_INVALID_REGISTER:
         printf(" (Invalid register access)\n");
@@ -93,15 +96,15 @@ int main(int argc, const char **argv)
     if (imax > RAM_SIZE) {
         imax = RAM_SIZE;
     }
-    uint16_t oopc = opc - 1;
+    uint32_t oopc = opc - 1;
     if (opc == 0) {
-        oopc = 0xFFFF;
+        oopc = RAM_SIZE - 1;
     }
     for (; i < imax; i += HEXDUMP_SIZE) {
         if (i == opc) {
-            printf("\n%04x |>", i);
+            printf("\n%08x |>", i);
         } else {
-            printf("\n%04x | ", i);
+            printf("\n%08x | ", i);
         }
         for (j = i; j < imax && j < i + HEXDUMP_SIZE; j++) {
             if (j == opc) {

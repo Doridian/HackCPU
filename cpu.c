@@ -659,6 +659,8 @@ static uint8_t _cpu_step() {
     case I_MOV16:
         *rrvv32.reg1 = rrvv32.reg2val & 0xFFFF;
         break;
+    case I_DEBUG:
+        break;
     default:
         return interrupt(INT_ILLEGAL_OPCODE);
     }

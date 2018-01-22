@@ -19,4 +19,4 @@ INT 0
 
 :test_fail
 HALT
-STR ramok "64k RAM OK"
+STR ramok "RAM OK"

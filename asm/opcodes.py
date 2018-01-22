@@ -94,6 +94,7 @@ OPCODES = {
     "DIVF": OpCode(70, IT_RRVV, "DIVF"),
     "MOV8": OpCode(71, IT_RRVV, "MOV8"),
     "MOV16": OpCode(72, IT_RRVV, "MOV16"),
+    "DEBUG": OpCode(73, IT_N, "DEBUG"),
     "REM": OpCode(-1, IT_VIRTUAL, "REM"),
     "STR": OpCode(-1, IT_VIRTUAL, "STR"),
 }

@@ -221,7 +221,7 @@ for line in in_f:
 		instructions.append(insn)
 
 if baseaddr < 0:
-	baseaddr = 0x10000 - bpos
+	baseaddr = (1024 * 1024 * 4) - bpos
 	enccpos = baseaddr % 8
 
 for insn in instructions:

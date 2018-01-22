@@ -2,6 +2,7 @@ from opcodes import *
 from sys import argv
 from math import ceil
 from argparse import ArgumentParser
+from binascii import unhexlify
 
 parser = ArgumentParser()
 parser.add_argument("input", help="Input file", type=str)
@@ -47,8 +48,10 @@ in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
 class Parameter:
-	def __init__(self, src):
-		if src[0] == "[":
+	def __init__(self, src, raw=False):
+		if raw:
+			self.cval = src
+		elif src[0] == "[":
 			if src[-1] != "]":
 				raise ValueError("Missing ] after [")
 
@@ -69,10 +72,6 @@ class Parameter:
 			# Convert to binary
 			self.rval = REGISTERS[src]
 			self.cval = None
-		elif src[0] == '"':
-			if src[-1] != '"' or len(src) < 2:
-				raise ValueError("Missing ending quote in string")
-			self.cval = bytes(src[1:-1], "ascii")
 		else:
 			self.rval = REGISTERS["CREG"]
 			# Check if 64-bit mode and convert as number to binary
@@ -133,7 +132,7 @@ class Instruction:
 		if self.opcode.name == "REM":
 			return 0
 
-		if self.opcode.name == "STR":
+		if self.opcode.name == "DB":
 			return self.params[0].len(self.b64)
 
 		mylen = 1 + ceil(len(self.params) / 2)
@@ -217,9 +216,18 @@ for line in in_f:
 				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
 	else:
 		opc = OPCODES[lsplit[0]]
-		if opc.name == "STR":
-			lbl = "str_" + lsplit[1]
-			lstr = Parameter(bytes(line[line.find(lsplit[1]) + len(lsplit[1]) + 1:], "ascii").decode("unicode_escape"))
+		if opc.name == "DB":
+			lbl = "db_" + lsplit[1]
+			rawData = line[line.find(lsplit[1]) + len(lsplit[1]) + 1:]
+			if rawData[0] == '"':
+				if rawData[-1] != '"' or len(rawData) < 2:
+					raise ValueError("Missing closing quote in DB string")
+				rawData = bytes(rawData[1:-1], "ascii")
+			elif rawData[0:1] == "0x":
+				rawData = unhexlify(rawData[2:])
+			else:
+				rawData = unhexlify(rawData.replace(" ", ""))
+			lstr = Parameter(rawData, True)
 			insn = Instruction(opc, [lstr])
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)

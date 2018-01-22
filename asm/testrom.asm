@@ -12,11 +12,11 @@ MOV [R1] 0x37133713
 CMP [R1] 0x37133713
 JNE :test_fail
 JNZ R1 :8bittest_next
-PUSH :str_ramok_len
-PUSH :str_ramok
+PUSH :db_ramok_len
+PUSH :db_ramok
 PUSH 0
 INT 0
 
 :test_fail
 HALT
-STR ramok "RAM OK"
+DB ramok "RAM OK"

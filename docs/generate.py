@@ -63,7 +63,7 @@ class OpCode:
 OPCODES = {
 ''' + '\n'.join(instructions_py) + '''
     "REM": OpCode(-1, IT_VIRTUAL, "REM"),
-    "STR": OpCode(-1, IT_VIRTUAL, "STR"),
+    "DB": OpCode(-1, IT_VIRTUAL, "DB"),
 }
 ''')
 f.close()

@@ -27,13 +27,13 @@ PUSH 1
 INT 1
 
 MOV IHBASE, R2
-# We need 4096 (2048 * 2) space, but since we can use the ROM's first 8 bytes which are only needed to boot (enc key) and then zero'd by us
-SUB IHBASE, 4088
+# We need 1024 (512 * 4) space, but since we can use the ROM's first 8 bytes which are only needed to boot (enc key) and then zero'd by us
+SUB IHBASE, 1016
 
 MOV PSP, IHBASE
-SUB PSP, 0x100
+SUB PSP, 4096
 MOV CSP, PSP
-SUB CSP, 0x100
+SUB CSP, 4096
 
 MOV64 R34, [R2]
 MOV64 [R2], 0

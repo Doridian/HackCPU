@@ -1,7 +1,7 @@
 __pycache__
-bin
-obj
-*.layout
-*.depend
 ~$*
 *.bin
+.vs
+x64
+Debug
+Release

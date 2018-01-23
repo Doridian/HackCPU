@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HMCPU", "HMCPU\HMCPU.vcxproj", "{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Debug|x64.ActiveCfg = Debug|x64
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Debug|x64.Build.0 = Debug|x64
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Debug|x86.ActiveCfg = Debug|Win32
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Debug|x86.Build.0 = Debug|Win32
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Release|x64.ActiveCfg = Release|x64
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Release|x64.Build.0 = Release|x64
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Release|x86.ActiveCfg = Release|Win32
+		{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {03C944AA-8B3C-4C4D-A9AD-385E1F3C19C1}
+	EndGlobalSection
+EndGlobal

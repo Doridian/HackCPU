@@ -1,0 +1,7 @@
+__pycache__
+bin
+obj
+*.layout
+*.depend
+~$*
+*.bin

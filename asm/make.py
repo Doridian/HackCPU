@@ -168,7 +168,7 @@ class Instruction:
 
 		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
 			for i in range(0, len(self.params)):
-				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER))
+				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=True))
 			return
 
 		for i in range(0, len(self.params), 2):

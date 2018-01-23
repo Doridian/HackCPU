@@ -100,7 +100,7 @@ enum INSTRUCTION {
 	I_ROFF12,
 };
 
-#define II_MAX 84
+#define II_MAX (84)
 
 enum ITYPE {
 	IT_RRVV = 0,

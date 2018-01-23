@@ -81,7 +81,7 @@ enum INSTRUCTION {
 ''' + '\n'.join(instructions) + '''
 };
 
-#define II_MAX ''' + str(lastopid) + '''
+#define II_MAX (''' + str(lastopid) + ''')
 
 enum ITYPE {
 	IT_RRVV = 0,

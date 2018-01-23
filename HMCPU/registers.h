@@ -17,8 +17,8 @@
 #define FLAG_RSTOFF1 (0b100000)
 #define FLAG_RSTOFF2 (0b1000000)
 
-#define FLAG_CMP   (FLAG_EQ|FLAG_LT)
-#define FLAG_NOCMP (~FLAG_CMP)
+#define FLAG_CMP     (FLAG_EQ|FLAG_LT)
+#define FLAG_NOCMP   (~FLAG_CMP)
 
 #define REGISTERS_SIZE 13
 

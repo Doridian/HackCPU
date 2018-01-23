@@ -112,4 +112,6 @@ OPCODES = {
 	"ROFF12": OpCode(84, IT_N, "ROFF12"),
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),
+	"__ENABLE_ENC": OpCode(-1, IT_VIRTUAL, "__ENABLE_ENC"),
+	"__DISABLE_ENC": OpCode(-1, IT_VIRTUAL, "__DISABLE_ENC"),
 }

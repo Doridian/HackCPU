@@ -55,7 +55,11 @@ class Parameter:
 	def __init__(self, src, raw=False):
 		if raw:
 			self.cval = src
-		elif src[0] == "[":
+			return
+
+		src = src.strip()
+
+		if src[0] == "[":
 			if src[-1] != "]":
 				raise ValueError("Missing ] after [")
 
@@ -133,11 +137,11 @@ class Instruction:
 		bpos += self.len()
 
 	def len(self):
-		if self.opcode.name == "REM":
-			return 0
-
 		if self.opcode.name == "DB":
 			return self.params[0].len(self.b64)
+
+		if self.opcode.type == IT_VIRTUAL:
+			return 0
 
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
@@ -149,20 +153,14 @@ class Instruction:
 		global enckey
 		global out_f
 
-		if self.opcode.name == "REM":
-			if self.params and len(self.params) > 0:
-				if self.params[0] == ":ENABLE_ENC":
-					enckey = int(self.params[1], 0).to_bytes(8, BYTEORDER)
-				elif self.params[0] == ":DISABLE_ENC":
-					enckey = None
-			return
-
-		if self.opcode.name == "DB":
+		if self.opcode.name == "__ENABLE_ENC":
+			enckey = int(self.params[0], 0).to_bytes(8, BYTEORDER)
+		elif self.opcode.name == "__DISABLE_ENC":
+			enckey = None
+		elif self.opcode.name == "DB":
 			cval = self.params[0].getcval(self.b64)
-			if cval == None:
-				return
-			out_f.write(cval)
-			return
+			if cval != None:
+				out_f.write(cval)
 
 		if self.opcode.type == IT_VIRTUAL:
 			return
@@ -198,36 +196,42 @@ for line in in_f:
 		continue
 
 	insn = None
-	lsplit = line.split(" ")
+	lineSpacePos = line.find(" ")
+	if lineSpacePos < 0:
+		opcodeName = line
+		lsplit = []
+	else:
+		opcodeName = line[0:lineSpacePos]
+		lsplit = line[lineSpacePos+1:].strip().split(",")
 
-	if line[0] == ":":
-		insn = Instruction(OPCODES["REM"], lsplit)
-		labels[line[1:]] = insn
-	elif line[0] == "#":
-		doenc = len(lsplit) > 1
-		long_enckkey = int(0)
-
-		if lsplit[0] == "#ROM":
+	if opcodeName[0] == ":":
+		insn = Instruction(OPCODES["REM"], [])
+		instructions.append(insn)
+		labels[opcodeName[1:]] = insn
+	elif opcodeName[0] == "#":
+		doenc = len(lsplit) > 0
+		int_enckkey = int(0)
+		if opcodeName == "#ROM":
 			if doenc:
-				long_enckkey = int(lsplit[1], 0)
+				int_enckkey = int(lsplit[0], 0)
 			baseaddr = -1
-			b = (long_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
+			b = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
 			out_f.write(b)
-			instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
-		elif lsplit[0] == "#BOOTLOADER":
+			instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+		elif opcodeName == "#BOOTLOADER":
 			if doenc:
-				long_enckkey = int(lsplit[1], 0)
+				int_enckkey = int(lsplit[0], 0)
 			baseaddr = 0
 			if doenc:
 				instructions.append(Instruction(OPCODES["NOP"]))
-				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(long_enckkey))]))
+				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
-				instructions.append(Instruction(OPCODES["REM"], [":ENABLE_ENC", str(long_enckkey)]))
+				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
 	else:
-		opc = OPCODES[lsplit[0]]
+		opc = OPCODES[opcodeName]
 		if opc.name == "DB":
-			lbl = "db_" + lsplit[1]
-			rawData = line[line.find(lsplit[1]) + len(lsplit[1]) + 1:]
+			lbl = "db_" + lsplit[0]
+			rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
 			if rawData[0] == '"':
 				if rawData[-1] != '"' or len(rawData) < 2:
 					raise ValueError("Missing closing quote in DB string")
@@ -241,7 +245,7 @@ for line in in_f:
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)
 		else:
-			insn = Instruction(OPCODES[lsplit[0]], list(map(Parameter, lsplit[1:])))
+			insn = Instruction(opc, list(map(Parameter, lsplit)))
 
 	if insn != None:
 		instructions.append(insn)

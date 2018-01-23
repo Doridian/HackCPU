@@ -81,7 +81,7 @@ static uint8_t dummyrom_read(struct iostream_t* io) {
 }
 
 void cpu_init() {
-	memclear(m, RAM_SIZE);
+	//memclear(m, RAM_SIZE);
 
 	// stdout
 	io[IO_STDOUT].rptr = 0;

@@ -97,7 +97,7 @@ void cpu_init() {
 	io[IO_ROM].length = sizeof(dummyrom);
 	io[IO_ROM].read = dummyrom_read;
 	io[IO_ROM].write = 0;
-	io[IO_ROM].flags = IO_FLAG_RPTR_GET| IO_FLAG_RPTR_SET| IO_FLAG_LENGTH| IO_FLAG_RESET;
+	io[IO_ROM].flags = IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
 
 	// stdin
 	io[IO_STDIN].rptr = 0;
@@ -113,7 +113,7 @@ void cpu_init() {
 	io[3].length = 0;
 	io[3].read = devzero_read;
 	io[3].write = devzero_write;
-	io[3].flags = IO_FLAG_WPTR_GET| IO_FLAG_WPTR_SET| IO_FLAG_RPTR_GET| IO_FLAG_RPTR_SET| IO_FLAG_LENGTH| IO_FLAG_RESET;
+	io[3].flags = IO_FLAG_WPTR_GET|IO_FLAG_WPTR_SET|IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
 
 	cpu_reset();
 }

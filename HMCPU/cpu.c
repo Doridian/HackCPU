@@ -704,23 +704,29 @@ static uint8_t _cpu_step() {
 		break;
 	case I_SOFF1:
 		r.r1offset = siread8();
+		r.flagr &= ~FLAG_RSTOFF1;
 		break;
 	case I_SOFF2:
 		r.r2offset = siread8();
+		r.flagr &= ~FLAG_RSTOFF2;
 		break;
 	case I_SOFF12:
 		r.r1offset = siread8();
 		r.r2offset = siread8();
+		r.flagr &= ~FLAG_RSTOFF12;
 		break;
 	case I_ROFF1:
 		r.r1offset = 0;
+		r.flagr &= ~FLAG_RSTOFF1;
 		break;
 	case I_ROFF2:
 		r.r2offset = 0;
+		r.flagr &= ~FLAG_RSTOFF2;
 		break;
 	case I_ROFF12:
 		r.r1offset = 0;
 		r.r2offset = 0;
+		r.flagr &= ~FLAG_RSTOFF12;
 		break;
 	case I_OSOFF1:
 		r.r1offset = siread8();

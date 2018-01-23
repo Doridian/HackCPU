@@ -25,15 +25,14 @@ REGISTERS = {
 	"ENCREG2": 11,
 	"IHBASE":  12,
 
-	"CREG":    13,
-	"MREG":    14,
-	"MREGC":   15,
-
 	"R12":     0,
 	"R34":     2,
 	"R56":     4,
 	"ENCREG":  10,
 }
+REG_CREG = 13
+REG_MREG = 14
+REG_MREGC = 15
 BYTEORDER = "little"
 RAM_SIZE = (1024 * 1024 * 4)
 RAM_MAX_ADDR = RAM_SIZE - 1
@@ -64,24 +63,24 @@ class Parameter:
 				raise ValueError("Missing ] after [")
 
 			if src[1] == ":":
-				self.rval = REGISTERS["MREGC"]
+				self.rval = REG_MREGC
 				self.cval = src[2:-1]
 			elif src[1:-1] in REGISTERS:
-				self.rval = REGISTERS["MREG"]
+				self.rval = REG_MREG
 				self.cval = REGISTERS[src[1:-1]].to_bytes(1, BYTEORDER)
 			else:
-				self.rval = REGISTERS["MREGC"]
+				self.rval = REG_MREGC
 				# Convert to binary
 				self.cval = int(src[1:-1], 0)
 		elif src[0] == ":":
-			self.rval = REGISTERS["CREG"]
+			self.rval = REG_CREG
 			self.cval = src[1:]
 		elif src in REGISTERS:
 			# Convert to binary
 			self.rval = REGISTERS[src]
 			self.cval = None
 		else:
-			self.rval = REGISTERS["CREG"]
+			self.rval = REG_CREG
 			# Check if 64-bit mode and convert as number to binary
 			self.cval = int(src, 0)
 
@@ -90,7 +89,7 @@ class Parameter:
 			return 0
 		if isinstance(self.cval, bytes):
 			return len(self.cval)
-		if self.rval == REGISTERS["CREG"] and b64:
+		if self.rval == REG_CREG and b64:
 			return 8
 		return 4
 
@@ -103,7 +102,7 @@ class Parameter:
 				self.cval = labels[self.cval].bpos + baseaddr
 
 		if isinstance(self.cval, int):
-			if self.rval == REGISTERS["CREG"] and b64:
+			if self.rval == REG_CREG and b64:
 				return self.cval.to_bytes(8, BYTEORDER)
 			return self.cval.to_bytes(4, BYTEORDER)
 

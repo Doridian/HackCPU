@@ -98,9 +98,12 @@ enum INSTRUCTION {
 	I_ROFF1,
 	I_ROFF2,
 	I_ROFF12,
+	I_OSOFF1,
+	I_OSOFF2,
+	I_OSOFF12,
 };
 
-#define II_MAX (84)
+#define II_MAX (87)
 
 enum ITYPE {
 	IT_RRVV = 0,
@@ -207,6 +210,9 @@ static uint8_t ITYPES[] = {
 	IT_N,
 	IT_N,
 	IT_N,
+	IT_V8,
+	IT_V8,
+	IT_V8V8,
 };
 
 #endif // OPCODES_H_INCLUDED

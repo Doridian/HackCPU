@@ -159,6 +159,10 @@ static regregvalval32_t ireadrrvv32() {
 		res.reg1val = iread32();
 	} else if (r1 == MREG_ID) {
 		res.reg1 = (uint32_t*)(m + ((r.u[iread8() & 0x0F] + r.r1offset) % RAM_SIZE));
+		if (r.flagr | FLAG_RSTOFF1) {
+			r.flagr &= ~FLAG_RSTOFF1;
+			r.r1offset = 0;
+		}
 		res.reg1val = *res.reg1;
 	} else if (r1 == MREGC_ID) {
 		res.reg1 = (uint32_t*)(m + (iread32() % RAM_SIZE));
@@ -174,6 +178,10 @@ static regregvalval32_t ireadrrvv32() {
 		res.reg2val = iread32();
 	} else if (r2 == MREG_ID) {
 		res.reg2 = (uint32_t*)(m + ((r.u[iread8() & 0x0F] + r.r2offset) % RAM_SIZE));
+		if (r.flagr | FLAG_RSTOFF2) {
+			r.flagr &= ~FLAG_RSTOFF2;
+			r.r2offset = 0;
+		}
 		res.reg2val = *res.reg2;
 	} else if (r2 == MREGC_ID) {
 		res.reg2 = (uint32_t*)(m + (iread32() % RAM_SIZE));
@@ -199,9 +207,13 @@ static regregvalval64_t ireadrrvv64() {
 		res.reg1val = iread64();
 	} else if (r1 == MREG_ID) {
 		res.reg1 = (uint64_t*)(m + ((r.u[iread8() & 0x0F] + r.r1offset) % RAM_SIZE));
+		if (r.flagr | FLAG_RSTOFF1) {
+			r.flagr &= ~FLAG_RSTOFF1;
+			r.r1offset = 0;
+		}
 		res.reg1val = *(uint64_t*)res.reg1;
 	} else if (r1 == MREGC_ID) {
-		res.reg1 = (uint64_t*)(m + ((iread32() + r.r1offset) % RAM_SIZE));
+		res.reg1 = (uint64_t*)(m + (iread32() % RAM_SIZE));
 		res.reg1val = *(uint64_t*)res.reg1;
 	} else if (r1 >= REGISTERS_SIZE) {
 		res.reg1 = NULL;
@@ -214,9 +226,13 @@ static regregvalval64_t ireadrrvv64() {
 		res.reg2val = iread64();
 	} else if (r2 == MREG_ID) {
 		res.reg2 = (uint64_t*)(m + ((r.u[iread8() & 0x0F] + r.r2offset) % RAM_SIZE));
+		if (r.flagr | FLAG_RSTOFF2) {
+			r.flagr &= ~FLAG_RSTOFF2;
+			r.r2offset = 0;
+		}
 		res.reg2val = *(uint64_t*)res.reg2;
 	} else if (r2 == MREGC_ID) {
-		res.reg2 = (uint64_t*)(m + ((iread32() + r.r2offset) % RAM_SIZE));
+		res.reg2 = (uint64_t*)(m + (iread32() % RAM_SIZE));
 		res.reg2val = *(uint64_t*)res.reg2;
 	} else if (r2 >= REGISTERS_SIZE) {
 		res.reg2 = NULL;

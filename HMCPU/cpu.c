@@ -97,7 +97,7 @@ void cpu_init() {
 	io[IO_ROM].length = sizeof(dummyrom);
 	io[IO_ROM].read = dummyrom_read;
 	io[IO_ROM].write = 0;
-	io[IO_ROM].flags = FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;
+	io[IO_ROM].flags = IO_FLAG_RPTR_GET| IO_FLAG_RPTR_SET| IO_FLAG_LENGTH| IO_FLAG_RESET;
 
 	// stdin
 	io[IO_STDIN].rptr = 0;
@@ -113,7 +113,7 @@ void cpu_init() {
 	io[3].length = 0;
 	io[3].read = devzero_read;
 	io[3].write = devzero_write;
-	io[3].flags = FLAG_WPTR_GET|FLAG_WPTR_SET|FLAG_RPTR_GET|FLAG_RPTR_SET|FLAG_LENGTH|FLAG_RESET;
+	io[3].flags = IO_FLAG_WPTR_GET| IO_FLAG_WPTR_SET| IO_FLAG_RPTR_GET| IO_FLAG_RPTR_SET| IO_FLAG_LENGTH| IO_FLAG_RESET;
 
 	cpu_reset();
 }
@@ -327,42 +327,42 @@ static uint8_t cpu_interrupt(uint8_t i) {
 		}
 		break;
 	case INT_IO_WPTR_SET:
-		if (iostr.flags | FLAG_WPTR_SET) {
+		if (iostr.flags | IO_FLAG_WPTR_SET) {
 			iostr.wptr = pop();
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RPTR_SET:
-		if (iostr.flags | FLAG_RPTR_SET) {
+		if (iostr.flags | IO_FLAG_RPTR_SET) {
 			iostr.rptr = pop();
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_WPTR_GET:
-		if (iostr.flags | FLAG_WPTR_GET) {
+		if (iostr.flags | IO_FLAG_WPTR_GET) {
 			push64(iostr.wptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RPTR_GET:
-		if (iostr.flags | FLAG_RPTR_GET) {
+		if (iostr.flags | IO_FLAG_RPTR_GET) {
 			push64(iostr.rptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_LENGTH_GET:
-		if (iostr.flags | FLAG_LENGTH) {
+		if (iostr.flags | IO_FLAG_LENGTH) {
 			push64(iostr.length);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RESET:
-		if (iostr.flags | FLAG_RESET) {
+		if (iostr.flags | IO_FLAG_RESET) {
 			iostr.wptr = 0;
 			iostr.rptr = 0;
 		} else {

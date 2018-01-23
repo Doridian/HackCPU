@@ -3,9 +3,10 @@
 
 #include <stdint.h>
 
-#define CREG_ID 13
-#define MREG_ID 14
-#define MREGC_ID 15
+#define CREG_ID        13
+#define MREG_ID        14
+#define MREGC_ID       15
+#define REGISTERS_SIZE 13
 
 #define FLAG_EQ	     (0b1)
 #define FLAG_LT	     (0b10)
@@ -19,8 +20,6 @@
 
 #define FLAG_CMP     (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP   (~FLAG_CMP)
-
-#define REGISTERS_SIZE 13
 
 #pragma pack(push, 1)
 typedef union registers_t {

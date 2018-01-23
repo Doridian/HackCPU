@@ -171,7 +171,7 @@ class Instruction:
 			if self.opcode.type == IT_V8 and plen != 1:
 				raise ValueError("Instruction only expects one argument")
 			if self.opcode.type == IT_V8V8 and plen != 2:
-				raise ValueError("Instruction expect two arguments")
+				raise ValueError("Instruction expects two arguments")
 
 			for i in range(0, plen):
 				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=True))

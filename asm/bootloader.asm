@@ -1,6 +1,7 @@
 #BOOTLOADER 0xDEADBEEFB00B5303
 MOV IHBASE, 0
-MOV PSP, 0xFFDF
+MOV PSP, :RAM_MAX_ADDR
+SUB PSP, 32
 XOR R1, R1
 XOR R2, R2
 XOR R3, R3
@@ -12,10 +13,17 @@ XOR R6, R6
 PUSH 1
 INT 6
 POP R1
-JNZ R1, :haltme
-POP R1
-CMP R1, 5
-JL :haltme
+CMP R1, 9
+JGE :keeploading
+
+PUSH :db_romtooshort_len
+PUSH :db_romtooshort
+PUSH 0
+INT 0
+HALT
+DB romtooshort, "ROM too short or not present"
+
+:keeploading
 PUSH 1
 INT 7
 MOV R2, :RAM_MAX_ADDR
@@ -37,10 +45,8 @@ SUB CSP, 4096
 
 MOV64 R34, [R2]
 MOV64 [R2], 0
-DEBUG
 XOR R3, 0xBEBADEFA
 XOR R4, 0x0BB0FECA
-DEBUG
 
 ADD R2, 8
 MOV [CSP], R2
@@ -58,10 +64,9 @@ MOV64 ENCREG, R34
 XOR R3, R3
 XOR R4, R4
 MOV R1, PC
-ADD R1, 4
 MOV R2, R1
 MOD R2, 4
-ADD R1, R2
+SUB R1, R2
 XOR R2, R2
 :erase_bootloader
 SUB R1, 4
@@ -69,10 +74,7 @@ MOV [R1], 0
 JNZ R1, :erase_bootloader
 JNZ ENCREG1, :romwithenc
 JNZ ENCREG2, :romwithenc
-DEBUG
 RETN
 :romwithenc
-DEBUG
 ENCRETN
-:haltme
-HALT
+

@@ -358,21 +358,21 @@ static uint8_t cpu_interrupt(uint8_t i) {
 		break;
 	case INT_IO_WPTR_GET:
 		if (iostr.flags | IO_FLAG_WPTR_GET) {
-			push64(iostr.wptr);
+			push(iostr.wptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RPTR_GET:
 		if (iostr.flags | IO_FLAG_RPTR_GET) {
-			push64(iostr.rptr);
+			push(iostr.rptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_LENGTH_GET:
 		if (iostr.flags | IO_FLAG_LENGTH) {
-			push64(iostr.length);
+			push(iostr.length);
 		} else {
 			return ERR_INVALID_IO;
 		}

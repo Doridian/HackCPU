@@ -159,7 +159,10 @@ class Instruction:
 		elif self.opcode.name == "DB":
 			cval = self.params[0].getcval(self.b64)
 			if cval != None:
-				out_f.write(cval)
+				_tmp_enckey = enckey
+				enckey = None
+				encwrite(cval)
+				enckey = _tmp_enckey
 
 		if self.opcode.type == IT_VIRTUAL:
 			return

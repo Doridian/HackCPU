@@ -72,7 +72,7 @@ OPCODES = {
 ''')
 f.close()
 
-f = open("../opcodes.h", "w")
+f = open("../HMCPU/opcodes.h", "w")
 f.write('''
 #ifndef OPCODES_H_INCLUDED
 #define OPCODES_H_INCLUDED

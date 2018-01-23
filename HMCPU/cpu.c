@@ -608,8 +608,10 @@ static uint8_t _cpu_step() {
 	case I_PUSHREG:
 		push64(r.r12);
 		push64(r.r34);
+		push64(r.r56);
 		break;
 	case I_POPREG:
+		pop64(r.r56);
 		pop64(r.r34);
 		pop64(r.r12);
 		break;

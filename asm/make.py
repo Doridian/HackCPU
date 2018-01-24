@@ -51,7 +51,8 @@ in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
 class Parameter:
-	def __init__(self, src, raw=False):
+	def __init__(self, src, offset=0, raw=False):
+		self.offset = offset
 		if raw:
 			self.cval = src
 			return
@@ -142,9 +143,17 @@ class Instruction:
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
 
+		hasoffset = False
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
-			mylen += self.params[i].len(self.b64)
+			param = self.params[i]
+			if param.offset != 0:
+				mylen += 1
+				hasoffset = True
+			mylen += param.len(self.b64)
+
+		if hasoffset:
+			mylen += 1
 
 		return mylen
 
@@ -169,8 +178,9 @@ class Instruction:
 
 		encwrite(self.opcode.i.to_bytes(1, BYTEORDER))
 
+		plen = len(self.params)
+
 		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
-			plen = len(self.params)
 			if self.opcode.type == IT_V8 and plen != 1:
 				raise ValueError("Instruction only expects one argument")
 			if self.opcode.type == IT_V8V8 and plen != 2:
@@ -180,17 +190,41 @@ class Instruction:
 				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=True))
 			return
 
-		for i in range(0, len(self.params), 2):
-			subval = 0
-			if i < len(self.params) - 1:
-				subval = self.params[i + 1].rval
-			encwrite((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
+		if self.opcode.type == IT_N:
+			if plen != 0:
+				raise ValueError("Instructions expects no arguments")
+			return
 
-		for i in range(0, len(self.params)):
-			cval = self.params[i].getcval(self.b64)
-			if cval == None:
-				continue
-			encwrite(cval)
+		if self.opcode.type == IT_RRVV or self.opcode.type == IT_RRVV64:
+			if plen > 2 or plen < 1:
+				raise ValueError("Instruction expects either one or two arguments")
+
+			if self.params[0].offset != 0:
+				if plen > 1 and self.params[1].offset != 0:
+					encwrite(OPCODES["OOFF12"].i.to_bytes(1, BYTEORDER))
+					encwrite(self.params[0].offset.to_bytes(1, BYTEORDER, signed=True))
+					encwrite(self.params[1].offset.to_bytes(1, BYTEORDER, signed=True))
+				else:
+					encwrite(OPCODES["OOFF1"].i.to_bytes(1, BYTEORDER))
+					encwrite(self.params[0].offset.to_bytes(1, BYTEORDER, signed=True))
+			elif plen > 1 and self.params[1].offset != 0:
+				encwrite(OPCODES["OOFF2"].i.to_bytes(1, BYTEORDER))
+				encwrite(self.params[1].offset.to_bytes(1, BYTEORDER, signed=True))
+
+			for i in range(0, len(self.params), 2):
+				subval = 0
+				if i < len(self.params) - 1:
+					subval = self.params[i + 1].rval
+				encwrite((self.params[i].rval << 4 | subval).to_bytes(1, BYTEORDER))
+
+			for i in range(0, len(self.params)):
+				cval = self.params[i].getcval(self.b64)
+				if cval == None:
+					continue
+				encwrite(cval)
+			return
+
+		raise ValueError("No idea about this instruction's arguments")
 
 # params can be:
 # :LABEL to refer to a label
@@ -248,7 +282,7 @@ for line in in_f:
 				rawData = unhexlify(rawData[2:])
 			else:
 				rawData = unhexlify(rawData.replace(" ", ""))
-			lstr = Parameter(rawData, True)
+			lstr = Parameter(rawData, 0, True)
 			insn = Instruction(opc, [lstr])
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)

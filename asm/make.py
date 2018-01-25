@@ -143,6 +143,9 @@ class Instruction:
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
 
+		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
+			return 1 + len(self.params)
+
 		hasoffset = False
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):

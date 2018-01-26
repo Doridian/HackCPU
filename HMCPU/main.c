@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -40,10 +38,20 @@ int main(int argc, const char **argv) {
 
 	if (argc > 1) {
 		const char *romfname = argv[1];
-		FILE *romfh = fopen(romfname, "rb");
+		FILE *romfh;
+#ifdef _MSC_VER
+		if (fopen_s(&romfh, romfname, "rb") != 0) {
+			return 5;
+		}
+#else
+		romfh = fopen(romfname, "rb");
+		if (romfs == NULL) {
+			return 5;
+		}
+#endif
 		fseek(romfh, 0L, SEEK_END);
 		size_t romlen = ftell(romfh);
-		io[IO_ROM].length = romlen;
+		io[IO_ROM].length = (uint32_t)romlen;
 		io[IO_ROM].read = fhrom_read;
 		rewind(romfh);
 		fhrom_data = malloc(romlen);

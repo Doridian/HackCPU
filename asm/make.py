@@ -79,7 +79,7 @@ class Parameter:
 		elif src in REGISTERS:
 			if mem:
 				self.rval = REG_MREG
-				self.cval = (REGISTERS[src] & 0x0F).to_bytes(1, BYTEORDER)
+				self.cval = REGISTERS[src].to_bytes(1, BYTEORDER)
 			else:
 				self.rval = REGISTERS[src]
 				self.cval = None

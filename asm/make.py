@@ -67,25 +67,47 @@ class Parameter:
 				raise ValueError("Missing ] after [")
 			return self.__parse(src[1:-1], True)
 
-		self.offset = 0
-
 		__creg = REG_CREG
 		if mem:
 			__creg = REG_MREGC
 
+		srcsplit = src.split(" ")
+		offset = 0
+		if len(srcsplit) > 1:
+			if len(srcsplit) % 2 != 1:
+				raise ValueError("Invalid offset specifier length")
+			for i in range(1, len(srcsplit), 2):
+				if srcsplit[i] == "+":
+					offset += int(srcsplit[i + 1], 0)
+				elif srcsplit[i] == "-":
+					offset -= int(srcsplit[i + 1], 0)
+				else:
+					raise ValueError("Invalid operator %s" % srcsplit[i])
+			src = srcsplit[0]
+
 		if src[0] == ":":
 			self.rval = __creg
 			self.cval = src[1:]
+			self.cval_offset = offset
 		elif src in REGISTERS:
 			if mem:
+				cval = REGISTERS[src]
 				self.rval = REG_MREG
-				self.cval = REGISTERS[src].to_bytes(1, BYTEORDER)
+				if offset != 0:
+					if offset < -128 or offset > 127:
+						raise ValueError("This parameter only supports offsets within the inclusive range -128 to 127")
+					cval |= 0b10000
+					self.cval = cval.to_bytes(1, BYTEORDER) + offset.to_bytes(1, BYTEORDER, signed=True)
+				else:
+					self.cval = cval.to_bytes(1, BYTEORDER)
 			else:
+				if offset != 0:
+					raise ValueError("This parameter does not support offsets")
 				self.rval = REGISTERS[src]
 				self.cval = None
 		else:
 			self.rval = __creg
-			self.cval = int(src, 0)
+			self.cval = int(src, 0) + offset
 
 	def len(self, b64):
 		if self.cval == None:
@@ -100,9 +122,9 @@ class Parameter:
 		if isinstance(self.cval, str):
 			lbl = labels[self.cval]
 			if isinstance(lbl, int):
-				self.cval = lbl
+				self.cval = lbl + self.cval_offset
 			else:
-				self.cval = labels[self.cval].bpos + baseaddr
+				self.cval = labels[self.cval].bpos + baseaddr + self.cval_offset
 
 		if isinstance(self.cval, int):
 			if self.rval == REG_CREG and b64:
@@ -148,17 +170,10 @@ class Instruction:
 		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
 			return 1 + len(self.params)
 
-		hasoffset = False
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
 			param = self.params[i]
-			if param.offset != 0:
-				mylen += 1
-				hasoffset = True
 			mylen += param.len(self.b64)
-
-		if hasoffset:
-			mylen += 1
 
 		return mylen
 
@@ -203,18 +218,6 @@ class Instruction:
 		if self.opcode.type == IT_RRVV or self.opcode.type == IT_RRVV64:
 			if plen > 2 or plen < 1:
 				raise ValueError("Instruction expects either one or two arguments")
-
-			if self.params[0].offset != 0:
-				if plen > 1 and self.params[1].offset != 0:
-					encwrite(OPCODES["OOFF12"].i.to_bytes(1, BYTEORDER))
-					encwrite(self.params[0].offset.to_bytes(1, BYTEORDER, signed=True))
-					encwrite(self.params[1].offset.to_bytes(1, BYTEORDER, signed=True))
-				else:
-					encwrite(OPCODES["OOFF1"].i.to_bytes(1, BYTEORDER))
-					encwrite(self.params[0].offset.to_bytes(1, BYTEORDER, signed=True))
-			elif plen > 1 and self.params[1].offset != 0:
-				encwrite(OPCODES["OOFF2"].i.to_bytes(1, BYTEORDER))
-				encwrite(self.params[1].offset.to_bytes(1, BYTEORDER, signed=True))
 
 			for i in range(0, len(self.params), 2):
 				subval = 0

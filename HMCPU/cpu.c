@@ -7,6 +7,8 @@
 #include "bootloader.h"
 #include "io.h"
 
+#define REG_FLAG_OFFSET 0b10000
+
 uint8_t cpu_needs_reset = 1;
 
 static void memclear(void *ptr, size_t num) {
@@ -158,11 +160,9 @@ static regregvalval32_t ireadrrvv32() {
 		res.reg1 = (uint32_t*)(m + (r.pc % RAM_SIZE));
 		res.reg1val = iread32();
 	} else if (r1 == MREG_ID) {
-		res.reg1 = (uint32_t*)(m + ((r.u[iread8() & 0x0F] + r.r1offset) % RAM_SIZE));
-		if (r.flagr | FLAG_RSTOFF1) {
-			r.flagr &= ~FLAG_RSTOFF1;
-			r.r1offset = 0;
-		}
+		uint8_t regid = iread8();
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		res.reg1 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg1val = *res.reg1;
 	} else if (r1 == MREGC_ID) {
 		res.reg1 = (uint32_t*)(m + (iread32() % RAM_SIZE));
@@ -177,11 +177,9 @@ static regregvalval32_t ireadrrvv32() {
 		res.reg2 = (uint32_t*)(m + (r.pc % RAM_SIZE));
 		res.reg2val = iread32();
 	} else if (r2 == MREG_ID) {
-		res.reg2 = (uint32_t*)(m + ((r.u[iread8() & 0x0F] + r.r2offset) % RAM_SIZE));
-		if (r.flagr | FLAG_RSTOFF2) {
-			r.flagr &= ~FLAG_RSTOFF2;
-			r.r2offset = 0;
-		}
+		uint8_t regid = iread8();
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		res.reg2 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg2val = *res.reg2;
 	} else if (r2 == MREGC_ID) {
 		res.reg2 = (uint32_t*)(m + (iread32() % RAM_SIZE));
@@ -206,11 +204,9 @@ static regregvalval64_t ireadrrvv64() {
 		res.reg1 = (uint64_t*)(m + (r.pc % RAM_SIZE));
 		res.reg1val = iread64();
 	} else if (r1 == MREG_ID) {
-		res.reg1 = (uint64_t*)(m + ((r.u[iread8() & 0x0F] + r.r1offset) % RAM_SIZE));
-		if (r.flagr | FLAG_RSTOFF1) {
-			r.flagr &= ~FLAG_RSTOFF1;
-			r.r1offset = 0;
-		}
+		uint8_t regid = iread8();
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		res.reg1 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg1val = *(uint64_t*)res.reg1;
 	} else if (r1 == MREGC_ID) {
 		res.reg1 = (uint64_t*)(m + (iread32() % RAM_SIZE));
@@ -225,11 +221,9 @@ static regregvalval64_t ireadrrvv64() {
 		res.reg2 = (uint64_t*)(m + (r.pc % RAM_SIZE));
 		res.reg2val = iread64();
 	} else if (r2 == MREG_ID) {
-		res.reg2 = (uint64_t*)(m + ((r.u[iread8() & 0x0F] + r.r2offset) % RAM_SIZE));
-		if (r.flagr | FLAG_RSTOFF2) {
-			r.flagr &= ~FLAG_RSTOFF2;
-			r.r2offset = 0;
-		}
+		uint8_t regid = iread8();
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		res.reg2 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg2val = *(uint64_t*)res.reg2;
 	} else if (r2 == MREGC_ID) {
 		res.reg2 = (uint64_t*)(m + (iread32() % RAM_SIZE));
@@ -701,45 +695,6 @@ static uint8_t _cpu_step() {
 		// Extra
 	case I_DEBUG:
 		//printf("Registers:\nR1=%08x R2=%08x R3=%08x R4=%08x R5=%08x R6=%08x\nPSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016I64x\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
-		break;
-	case I_SOFF1:
-		r.r1offset = siread8();
-		r.flagr &= ~FLAG_RSTOFF1;
-		break;
-	case I_SOFF2:
-		r.r2offset = siread8();
-		r.flagr &= ~FLAG_RSTOFF2;
-		break;
-	case I_SOFF12:
-		r.r1offset = siread8();
-		r.r2offset = siread8();
-		r.flagr &= ~FLAG_RSTOFF12;
-		break;
-	case I_ROFF1:
-		r.r1offset = 0;
-		r.flagr &= ~FLAG_RSTOFF1;
-		break;
-	case I_ROFF2:
-		r.r2offset = 0;
-		r.flagr &= ~FLAG_RSTOFF2;
-		break;
-	case I_ROFF12:
-		r.r1offset = 0;
-		r.r2offset = 0;
-		r.flagr &= ~FLAG_RSTOFF12;
-		break;
-	case I_OSOFF1:
-		r.r1offset = siread8();
-		r.flagr |= FLAG_RSTOFF1;
-		break;
-	case I_OSOFF2:
-		r.r2offset = siread8();
-		r.flagr |= FLAG_RSTOFF2;
-		break;
-	case I_OSOFF12:
-		r.r1offset = siread8();
-		r.r2offset = siread8();
-		r.flagr |= FLAG_RSTOFF12;
 		break;
 	default:
 		return interrupt(INT_ILLEGAL_OPCODE);

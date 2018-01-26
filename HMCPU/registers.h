@@ -15,13 +15,8 @@
 #define FLAG_TRAP     (0b1000)
 #define FLAG_ENCON    (0b10000)
 
-#define FLAG_RSTOFF1  (0b100000)
-#define FLAG_RSTOFF2  (0b1000000)
-
 #define FLAG_CMP      (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP    (~FLAG_CMP)
-
-#define FLAG_RSTOFF12 (FLAG_RSTOFF1|FLAG_RSTOFF2)
 
 #pragma pack(push, 1)
 typedef union registers_t {
@@ -84,9 +79,9 @@ typedef union registers_t {
 			uint32_t msr;
 			struct {
 				uint8_t flagr;
-				int8_t r1offset;
-				int8_t r2offset;
-				uint8_t unusedmsr;
+				uint8_t unusedmsr1;
+				uint8_t unusedmsr2;
+				uint8_t unusedmsr3;
 			};
 		};
 		union {

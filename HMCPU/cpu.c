@@ -152,7 +152,7 @@ typedef struct regregvalval##nbits##_t { \
 	rrvvNN(nbits, ftype, 2) \
 } regregvalval##nbits##_t; \
 \
-static regregvalval##nbits##_t ireadrrvv##nbits() { \
+static inline regregvalval##nbits##_t ireadrrvv##nbits() { \
 	uint8_t regs = iread8(); \
 	uint8_t r1 = (regs >> 4) & 0x0F; \
 	uint8_t r2 = regs & 0x0F; \

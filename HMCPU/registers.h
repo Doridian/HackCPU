@@ -10,10 +10,9 @@
 
 #define FLAG_EQ	      (0b1)
 #define FLAG_LT	      (0b10)
-//#define FLAG_GT	  (0b100)
 
-#define FLAG_TRAP     (0b1000)
-#define FLAG_ENCON    (0b10000)
+#define FLAG_TRAP     (0b100)
+#define FLAG_ENCON    (0b1000)
 
 #define FLAG_CMP      (FLAG_EQ|FLAG_LT)
 #define FLAG_NOCMP    (~FLAG_CMP)

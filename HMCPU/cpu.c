@@ -18,52 +18,6 @@ static void memclear(void *ptr, size_t num) {
 	}
 }
 
-typedef struct regregvalval64_t {
-	union {
-		uint64_t* reg1;
-		int64_t* reg1s;
-		double* reg1f;
-	};
-	union {
-		uint64_t* reg2;
-		int64_t* reg2s;
-		double* reg2f;
-	};
-	union {
-		uint64_t reg1val;
-		int64_t reg1vals;
-		double reg1valf;
-	};
-	union {
-		uint64_t reg2val;
-		int64_t reg2vals;
-		double reg2valf;
-	};
-} regregvalval64_t;
-
-typedef struct regregvalval32_t {
-	union {
-		uint32_t* reg1;
-		int32_t* reg1s;
-		float* reg1f;
-	};
-	union {
-		uint32_t* reg2;
-		int32_t* reg2s;
-		float* reg2f;
-	};
-	union {
-		uint32_t reg1val;
-		int32_t reg1vals;
-		float reg1valf;
-	};
-	union {
-		uint32_t reg2val;
-		int32_t reg2vals;
-		float reg2valf;
-	};
-} regregvalval32_t;
-
 void cpu_reset() {
 	memclear(&r, sizeof(r));
 	int i;
@@ -120,7 +74,7 @@ void cpu_init() {
 	cpu_reset();
 }
 
-static uint8_t iread8() {
+static inline uint8_t iread8() {
 	uint32_t opc = r.pc++;
 	if (opc >= RAM_SIZE) {
 		r.pc = 1;
@@ -133,12 +87,12 @@ static uint8_t iread8() {
 	return raw;
 }
 
-static int8_t siread8() {
+static inline int8_t siread8() {
 	uint8_t u8 = iread8();
 	return *(int8_t*)&u8;
 }
 
-static int8_t siread8_no0() {
+static inline int8_t siread8_no0() {
 	int8_t i8 = siread8();
 	if (i8 >= 0) {
 		return i8 + 1;
@@ -149,38 +103,56 @@ static int8_t siread8_no0() {
 #define __iread8_64() ((uint64_t)iread8())
 #define __iread8_32() ((uint32_t)iread8())
 
-static uint32_t iread32() {
+static inline uint32_t constrain_ram(val) {
+	return (val % RAM_SIZE);
+}
+
+static inline uint32_t iread32() {
 	return __iread8_32() + (__iread8_32() << 8) + (__iread8_32() << 16) + (__iread8_32() << 24);
 }
 
-static uint64_t iread64() {
+static inline uint64_t iread64() {
 	return __iread8_64() + (__iread8_64() << 8) + (__iread8_64() << 16) + (__iread8_64() << 24) + (__iread8_64() << 32) + (__iread8_64() << 40) + (__iread8_64() << 48) + (__iread8_64() << 56);
 }
 
-#define ireadrv(nbits, idx) res.reg##idx## = r.u + r##idx##; \
-	if (r##idx## == CREG_ID) { \
-		res.reg##idx## = (uint##nbits##_t*)(m + (r.pc % RAM_SIZE)); \
-		res.reg##idx##val = iread##nbits##(); \
-	} \
-	else if (r##idx## == MREG_ID) { \
+#define ireadrv(nbits, idx) res.reg##idx = (uint##nbits##_t*)r.u + r##idx; \
+	if (r##idx == CREG_ID) { \
+		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(r.pc)); \
+		res.reg##idx##val = iread##nbits(); \
+	} else if (r##idx == MREG_ID) { \
 		uint8_t regid = iread8(); \
 		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0; \
-		res.reg##idx## = (uint##nbits##_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE)); \
-		res.reg##idx##val = *res.reg##idx##; \
-	} \
-	else if (r##idx## == MREGC_ID) { \
-		res.reg##idx## = (uint##nbits##_t*)(m + (iread32() % RAM_SIZE)); \
-		res.reg##idx##val = *(uint##nbits##_t*)res.reg##idx##; \
-	} \
-	else if (r##idx## >= REGISTERS_SIZE) { \
-		res.reg##idx## = NULL; \
+		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(r.u[regid & 0x0F] + offset)); \
+		res.reg##idx##val = *res.reg##idx; \
+	} else if (r##idx == MREGC_ID) { \
+		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(iread32())); \
+		res.reg##idx##val = *(uint##nbits##_t*)res.reg##idx; \
+	} else if (r##idx >= REGISTERS_SIZE) { \
+		res.reg##idx = NULL; \
 		res.reg##idx##val = 0; \
-	} \
-	else { \
-		res.reg##idx##val = *res.reg##idx##; \
+	} else { \
+		res.reg##idx##val = *res.reg##idx; \
 	}
 
-#define ireadrrvvN(nbits) static regregvalval##nbits##_t ireadrrvv##nbits##() { \
+#define rrvvNN(nbits, ftype, idx) \
+	union { \
+		uint##nbits##_t* reg##idx; \
+		int##nbits##_t* reg##idx##s; \
+		ftype* reg##idx##f; \
+	}; \
+	union { \
+		uint##nbits##_t reg##idx##val; \
+		int##nbits##_t reg##idx##vals; \
+		ftype reg##idx##valf; \
+	};
+
+#define ireadrrvvN(nbits, ftype) \
+typedef struct regregvalval##nbits##_t { \
+	rrvvNN(nbits, ftype, 1) \
+	rrvvNN(nbits, ftype, 2) \
+} regregvalval##nbits##_t; \
+\
+static regregvalval##nbits##_t ireadrrvv##nbits() { \
 	uint8_t regs = iread8(); \
 	uint8_t r1 = (regs >> 4) & 0x0F; \
 	uint8_t r2 = regs & 0x0F; \
@@ -190,43 +162,43 @@ static uint64_t iread64() {
 	return res; \
 }
 
-ireadrrvvN(32);
-ireadrrvvN(64);
+ireadrrvvN(32, float)
+ireadrrvvN(64, double)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 static void push(uint32_t i) {
-	uint32_t* m32 = (uint32_t*)(m + (r.psp % RAM_SIZE));
+	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.psp));
 	r.psp += 4;
 	*m32 = i;
 }
 
 static void ipush(uint32_t i) {
-	uint32_t* m32 = (uint32_t*)(m + (r.csp % RAM_SIZE));
+	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.csp));
 	r.csp += 4;
 	*m32 = i;
 }
 
 static void push64(uint64_t i) {
-	uint64_t* m64 = (uint64_t*)(m + (r.psp % RAM_SIZE));
+	uint64_t* m64 = (uint64_t*)(m + constrain_ram(r.psp));
 	r.psp += 8;
 	*m64 = i;
 }
 
 static uint32_t pop() {
 	r.psp -= 4;
-	return *(uint32_t*)(m + (r.psp % RAM_SIZE));
+	return *(uint32_t*)(m + constrain_ram(r.psp));
 }
 
 static uint64_t pop64() {
 	r.psp -= 8;
-	return *(uint64_t*)(m + (r.psp % RAM_SIZE));
+	return *(uint64_t*)(m + constrain_ram(r.psp));
 }
 
 static uint32_t ipop() {
 	r.csp -= 4;
-	return *(uint32_t*)(m + (r.csp % RAM_SIZE));
+	return *(uint32_t*)(m + constrain_ram(r.csp));
 }
 
 #define DOCMP(a, b) r.flagr = (r.flagr & FLAG_NOCMP) | \
@@ -343,7 +315,7 @@ static uint8_t interrupt_nopush(uint8_t i) {
 	if (r.ihbase == 0) {
 		return cpu_interrupt(i);
 	}
-	uint32_t newpc = *(uint32_t*)(m + (((i << 1) + r.ihbase) % RAM_SIZE));
+	uint32_t newpc = *(uint32_t*)(m + constrain_ram((i << 1) + r.ihbase));
 	if (newpc == 0) {
 		return cpu_interrupt(i);
 	}
@@ -555,7 +527,7 @@ static uint8_t _cpu_step() {
 	case I_INT:
 		return interrupt(rrvv32.reg1val);
 	case I_SETIH:
-		*(uint16_t*)(m + ((((rrvv32.reg1val & 0xFF) << 1) + r.ihbase) % RAM_SIZE)) = rrvv32.reg2val;
+		*(uint16_t*)(m + constrain_ram(((rrvv32.reg1val & 0xFF) << 1) + r.ihbase)) = rrvv32.reg2val;
 		break;
 	case I_HALT:
 		return ERR_HALT;

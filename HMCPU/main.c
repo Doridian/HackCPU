@@ -45,7 +45,7 @@ int main(int argc, const char **argv) {
 		}
 #else
 		romfh = fopen(romfname, "rb");
-		if (romfs == NULL) {
+		if (romfh == NULL) {
 			return 5;
 		}
 #endif

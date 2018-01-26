@@ -165,9 +165,6 @@ static regregvalval##nbits##_t ireadrrvv##nbits() { \
 ireadrrvvN(32, float)
 ireadrrvvN(64, double)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-
 static void push(uint32_t i) {
 	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.psp));
 	r.psp += 4;
@@ -657,4 +654,3 @@ uint8_t cpu_step() {
 	return res;
 }
 
-#pragma GCC diagnostic pop

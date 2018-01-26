@@ -157,93 +157,41 @@ static uint64_t iread64() {
 	return __iread8_64() + (__iread8_64() << 8) + (__iread8_64() << 16) + (__iread8_64() << 24) + (__iread8_64() << 32) + (__iread8_64() << 40) + (__iread8_64() << 48) + (__iread8_64() << 56);
 }
 
-static regregvalval32_t ireadrrvv32() {
-	uint8_t regs = iread8();
-	uint8_t r1 = (regs >> 4) & 0x0F;
-	uint8_t r2 = regs & 0x0F;
-	regregvalval32_t res;
-	res.reg1 = r.u + r1;
-	res.reg2 = r.u + r2;
-	if (r1 == CREG_ID) {
-		res.reg1 = (uint32_t*)(m + (r.pc % RAM_SIZE));
-		res.reg1val = iread32();
-	} else if (r1 == MREG_ID) {
-		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
-		res.reg1 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
-		res.reg1val = *res.reg1;
-	} else if (r1 == MREGC_ID) {
-		res.reg1 = (uint32_t*)(m + (iread32() % RAM_SIZE));
-		res.reg1val = *(uint32_t*)res.reg1;
-	} else if (r1 >= REGISTERS_SIZE) {
-		res.reg1 = NULL;
-		res.reg1val = 0;
-	} else {
-		res.reg1val = *res.reg1;
+#define ireadrv(nbits, idx) res.reg##idx## = r.u + r##idx##; \
+	if (r##idx## == CREG_ID) { \
+		res.reg##idx## = (uint##nbits##_t*)(m + (r.pc % RAM_SIZE)); \
+		res.reg##idx##val = iread##nbits##(); \
+	} \
+	else if (r##idx## == MREG_ID) { \
+		uint8_t regid = iread8(); \
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0; \
+		res.reg##idx## = (uint##nbits##_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE)); \
+		res.reg##idx##val = *res.reg##idx##; \
+	} \
+	else if (r##idx## == MREGC_ID) { \
+		res.reg##idx## = (uint##nbits##_t*)(m + (iread32() % RAM_SIZE)); \
+		res.reg##idx##val = *(uint##nbits##_t*)res.reg##idx##; \
+	} \
+	else if (r##idx## >= REGISTERS_SIZE) { \
+		res.reg##idx## = NULL; \
+		res.reg##idx##val = 0; \
+	} \
+	else { \
+		res.reg##idx##val = *res.reg##idx##; \
 	}
-	if (r2 == CREG_ID) {
-		res.reg2 = (uint32_t*)(m + (r.pc % RAM_SIZE));
-		res.reg2val = iread32();
-	} else if (r2 == MREG_ID) {
-		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
-		res.reg2 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
-		res.reg2val = *res.reg2;
-	} else if (r2 == MREGC_ID) {
-		res.reg2 = (uint32_t*)(m + (iread32() % RAM_SIZE));
-		res.reg2val = *(uint32_t*)res.reg2;
-	} else if (r2 >= REGISTERS_SIZE) {
-		res.reg2 = NULL;
-		res.reg2val = 0;
-	} else {
-		res.reg2val = *res.reg2;
-	}
-	return res;
+
+#define ireadrrvvN(nbits) static regregvalval##nbits##_t ireadrrvv##nbits##() { \
+	uint8_t regs = iread8(); \
+	uint8_t r1 = (regs >> 4) & 0x0F; \
+	uint8_t r2 = regs & 0x0F; \
+	regregvalval##nbits##_t res; \
+	ireadrv(nbits, 1); \
+	ireadrv(nbits, 2); \
+	return res; \
 }
 
-static regregvalval64_t ireadrrvv64() {
-	uint8_t regs = iread8();
-	uint8_t r1 = (regs >> 4) & 0x0F;
-	uint8_t r2 = regs & 0x0F;
-	regregvalval64_t res;
-	res.reg1 = (uint64_t*)(r.u + r1);
-	res.reg2 = (uint64_t*)(r.u + r2);
-	if (r1 == CREG_ID) {
-		res.reg1 = (uint64_t*)(m + (r.pc % RAM_SIZE));
-		res.reg1val = iread64();
-	} else if (r1 == MREG_ID) {
-		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
-		res.reg1 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
-		res.reg1val = *(uint64_t*)res.reg1;
-	} else if (r1 == MREGC_ID) {
-		res.reg1 = (uint64_t*)(m + (iread32() % RAM_SIZE));
-		res.reg1val = *(uint64_t*)res.reg1;
-	} else if (r1 >= REGISTERS_SIZE) {
-		res.reg1 = NULL;
-		res.reg1val = 0;
-	} else {
-		res.reg1val = *(uint64_t*)res.reg1;
-	}
-	if (r2 == CREG_ID) {
-		res.reg2 = (uint64_t*)(m + (r.pc % RAM_SIZE));
-		res.reg2val = iread64();
-	} else if (r2 == MREG_ID) {
-		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
-		res.reg2 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
-		res.reg2val = *(uint64_t*)res.reg2;
-	} else if (r2 == MREGC_ID) {
-		res.reg2 = (uint64_t*)(m + (iread32() % RAM_SIZE));
-		res.reg2val = *(uint64_t*)res.reg2;
-	} else if (r2 >= REGISTERS_SIZE) {
-		res.reg2 = NULL;
-		res.reg2val = 0;
-	} else {
-		res.reg2val = *(uint64_t*)res.reg2;
-	}
-	return res;
-}
+ireadrrvvN(32);
+ireadrrvvN(64);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"

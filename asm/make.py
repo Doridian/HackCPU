@@ -51,38 +51,40 @@ in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
 class Parameter:
-	def __init__(self, src, offset=0, raw=False):
-		self.offset = offset
+	def __init__(self, src, raw=False):
 		if raw:
+			self.rval = None
 			self.cval = src
 			return
-
 		src = src.strip()
+		self.__parse(src)
 
+	def __parse(self, src, mem=False):
 		if src[0] == "[":
+			if mem:
+				raise ValueError("Nested [ are not allowed")
 			if src[-1] != "]":
 				raise ValueError("Missing ] after [")
+			return self.__parse(src[1:-1], True)
 
-			if src[1] == ":":
-				self.rval = REG_MREGC
-				self.cval = src[2:-1]
-			elif src[1:-1] in REGISTERS:
-				self.rval = REG_MREG
-				self.cval = REGISTERS[src[1:-1]].to_bytes(1, BYTEORDER)
-			else:
-				self.rval = REG_MREGC
-				# Convert to binary
-				self.cval = int(src[1:-1], 0)
-		elif src[0] == ":":
-			self.rval = REG_CREG
+		self.offset = 0
+
+		__creg = REG_CREG
+		if mem:
+			__creg = REG_MREGC
+
+		if src[0] == ":":
+			self.rval = __creg
 			self.cval = src[1:]
 		elif src in REGISTERS:
-			# Convert to binary
-			self.rval = REGISTERS[src]
-			self.cval = None
+			if mem:
+				self.rval = REG_MREG
+				self.cval = (REGISTERS[src] & 0x0F).to_bytes(1, BYTEORDER)
+			else:
+				self.rval = REGISTERS[src]
+				self.cval = None
 		else:
-			self.rval = REG_CREG
-			# Check if 64-bit mode and convert as number to binary
+			self.rval = __creg
 			self.cval = int(src, 0)
 
 	def len(self, b64):
@@ -285,7 +287,7 @@ for line in in_f:
 				rawData = unhexlify(rawData[2:])
 			else:
 				rawData = unhexlify(rawData.replace(" ", ""))
-			lstr = Parameter(rawData, 0, True)
+			lstr = Parameter(rawData, True)
 			insn = Instruction(opc, [lstr])
 			labels[lbl] = insn
 			labels[lbl + "_len"] = lstr.len(False)

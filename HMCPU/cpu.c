@@ -115,7 +115,7 @@ static inline uint64_t iread64() {
 	return __iread8_64() + (__iread8_64() << 8) + (__iread8_64() << 16) + (__iread8_64() << 24) + (__iread8_64() << 32) + (__iread8_64() << 40) + (__iread8_64() << 48) + (__iread8_64() << 56);
 }
 
-#define ireadrv(nbits, idx) res.reg##idx = (uint##nbits##_t*)r.u + r##idx; \
+#define ireadrv(nbits, idx) res.reg##idx = (uint##nbits##_t*)(r.u + r##idx); \
 	if (r##idx == CREG_ID) { \
 		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(r.pc)); \
 		res.reg##idx##val = iread##nbits(); \

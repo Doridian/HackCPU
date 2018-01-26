@@ -92,8 +92,10 @@ class Parameter:
 				cval = REGISTERS[src]
 				self.rval = REG_MREG
 				if offset != 0:
-					if offset < -128 or offset > 127:
+					if offset < -128 or offset > 128:
 						raise ValueError("This parameter only supports offsets within the inclusive range -128 to 127")
+					if offset > 0:
+						offset -= 1
 					cval |= 0b10000
 					self.cval = cval.to_bytes(1, BYTEORDER) + offset.to_bytes(1, BYTEORDER, signed=True)
 				else:

@@ -138,6 +138,14 @@ static int8_t siread8() {
 	return *(int8_t*)&u8;
 }
 
+static int8_t siread8_no0() {
+	int8_t i8 = siread8();
+	if (i8 >= 0) {
+		return i8 + 1;
+	}
+	return i8;
+}
+
 #define __iread8_64() ((uint64_t)iread8())
 #define __iread8_32() ((uint32_t)iread8())
 
@@ -154,14 +162,14 @@ static regregvalval32_t ireadrrvv32() {
 	uint8_t r1 = (regs >> 4) & 0x0F;
 	uint8_t r2 = regs & 0x0F;
 	regregvalval32_t res;
-	res.reg1 = r.u + r1; // TODO: Make sure this adds 2 * res.reg1, not 1!
-	res.reg2 = r.u + r2; // TODO: Make sure this adds 2 * res.reg2, not 1!
+	res.reg1 = r.u + r1;
+	res.reg2 = r.u + r2;
 	if (r1 == CREG_ID) {
 		res.reg1 = (uint32_t*)(m + (r.pc % RAM_SIZE));
 		res.reg1val = iread32();
 	} else if (r1 == MREG_ID) {
 		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
 		res.reg1 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg1val = *res.reg1;
 	} else if (r1 == MREGC_ID) {
@@ -178,7 +186,7 @@ static regregvalval32_t ireadrrvv32() {
 		res.reg2val = iread32();
 	} else if (r2 == MREG_ID) {
 		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
 		res.reg2 = (uint32_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg2val = *res.reg2;
 	} else if (r2 == MREGC_ID) {
@@ -198,14 +206,14 @@ static regregvalval64_t ireadrrvv64() {
 	uint8_t r1 = (regs >> 4) & 0x0F;
 	uint8_t r2 = regs & 0x0F;
 	regregvalval64_t res;
-	res.reg1 = (uint64_t*)(r.u + r1); // TODO: Make sure this adds 2 * res.reg1, not 1!
-	res.reg2 = (uint64_t*)(r.u + r2); // TODO: Make sure this adds 2 * res.reg2, not 1!
+	res.reg1 = (uint64_t*)(r.u + r1);
+	res.reg2 = (uint64_t*)(r.u + r2);
 	if (r1 == CREG_ID) {
 		res.reg1 = (uint64_t*)(m + (r.pc % RAM_SIZE));
 		res.reg1val = iread64();
 	} else if (r1 == MREG_ID) {
 		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
 		res.reg1 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg1val = *(uint64_t*)res.reg1;
 	} else if (r1 == MREGC_ID) {
@@ -222,7 +230,7 @@ static regregvalval64_t ireadrrvv64() {
 		res.reg2val = iread64();
 	} else if (r2 == MREG_ID) {
 		uint8_t regid = iread8();
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8() : 0;
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0;
 		res.reg2 = (uint64_t*)(m + ((r.u[regid & 0x0F] + offset) % RAM_SIZE));
 		res.reg2val = *(uint64_t*)res.reg2;
 	} else if (r2 == MREGC_ID) {

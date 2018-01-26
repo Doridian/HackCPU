@@ -35,7 +35,6 @@ REG_MREG = 14
 REG_MREGC = 15
 BYTEORDER = "little"
 RAM_SIZE = (1024 * 1024 * 4)
-RAM_MAX_ADDR = RAM_SIZE - 1
 
 baseaddr = None
 enckey = None

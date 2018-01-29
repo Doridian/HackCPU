@@ -104,6 +104,7 @@ OPCODES = {
 	"DIV64F": OpCode(77, IT_RRVV, "DIV64F"),
 	# Extra
 	"DEBUG": OpCode(78, IT_N, "DEBUG"),
+	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),
 	"__ENABLE_ENC": OpCode(-1, IT_VIRTUAL, "__ENABLE_ENC"),

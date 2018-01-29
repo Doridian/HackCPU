@@ -64,6 +64,7 @@ class OpCode:
 
 OPCODES = {
 ''' + '\n'.join(instructions_py) + '''
+	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),
 	"__ENABLE_ENC": OpCode(-1, IT_VIRTUAL, "__ENABLE_ENC"),

@@ -103,7 +103,7 @@ static inline int8_t siread8_no0() {
 #define __iread8_64() ((uint64_t)iread8())
 #define __iread8_32() ((uint32_t)iread8())
 
-static inline uint32_t constrain_ram(val) {
+static inline uint32_t constrain_ram(uint32_t val) {
 	return (val % RAM_SIZE);
 }
 

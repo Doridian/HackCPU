@@ -343,7 +343,7 @@ uint8_t cpu_run() {
 static uint8_t _cpu_step() {
 	uint8_t op = iread8();
 
-	if (op > II_MAX) {
+	if (op >= I_FIRST_INVALID) {
 		return interrupt(INT_ILLEGAL_OPCODE);
 	}
 

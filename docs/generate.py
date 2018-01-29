@@ -80,9 +80,8 @@ f.write('''
 
 enum INSTRUCTION {
 ''' + '\n'.join(instructions) + '''
+	I_FIRST_INVALID
 };
-
-#define II_MAX (''' + str(lastopid) + ''')
 
 enum ITYPE {
 	IT_RRVV = 0,

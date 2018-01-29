@@ -92,9 +92,8 @@ enum INSTRUCTION {
 	I_DIV64F,
 	// Extra
 	I_DEBUG,
+	I_FIRST_INVALID
 };
-
-#define II_MAX (78)
 
 enum ITYPE {
 	IT_RRVV = 0,

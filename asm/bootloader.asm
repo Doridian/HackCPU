@@ -75,5 +75,8 @@ JNZ ENCREG1, :romwithenc
 JNZ ENCREG2, :romwithenc
 RETN
 :romwithenc
-ENCRETN
-
+XOR [:romwithenc_retn], ENCREG
+ENCON
+#ALIGN 4, 0
+:romwithenc_retn
+RETN

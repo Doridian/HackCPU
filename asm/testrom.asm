@@ -1,4 +1,4 @@
-#ROM 0
+#ROM 0x1337133713371337
 :baseaddr
 MOV IHBASE, 0
 # RAM TEST 8-bit

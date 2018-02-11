@@ -68,7 +68,6 @@ enum INSTRUCTION {
 	I_ENCON,
 	I_PUSHREG,
 	I_POPREG,
-	I_ENCRETN,
 	// Integer Arithmetic 64bit
 	I_ADD64,
 	I_SUB64,
@@ -163,7 +162,6 @@ static uint8_t ITYPES[] = {
 	// Special
 	IT_RRVV,
 	IT_RRVV,
-	IT_N,
 	IT_N,
 	IT_N,
 	IT_N,

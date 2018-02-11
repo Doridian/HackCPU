@@ -234,6 +234,28 @@ class Instruction:
 
 		raise ValueError("No idea about this instruction's arguments")
 
+NOPCODE = OPCODES["NOP"].i.to_bytes(1, BYTEORDER)
+
+class AlignInstruction:
+	def __init__(self, base, offset):
+		global bpos
+		if offset >= base:
+			raise("Offset >= Base for align")
+		self.bpos = bpos
+		cur_offset = bpos % base
+		if offset < cur_offset:
+			offset += base
+		self._len = offset - cur_offset
+		bpos += self.len()
+
+	def len(self):
+		return self._len
+
+	def write(self):
+		global NOPCODE
+		for i in range(0, self._len):
+			encwrite(NOPCODE)
+
 # params can be:
 # :LABEL to refer to a label
 # @ANY to refer to "thing at this address in RAM" (can be const or Register or Label)
@@ -277,6 +299,8 @@ for line in in_f:
 				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
 				instructions.append(Instruction(OPCODES["ENCON"]))
 				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+		elif opcodeName == "#ALIGN":
+			instructions.append(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
 	else:
 		opc = OPCODES[opcodeName]
 		if opc.name == "DB":

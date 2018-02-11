@@ -550,10 +550,6 @@ static uint8_t _cpu_step() {
 		pop64(r.r34);
 		pop64(r.r12);
 		break;
-	case I_ENCRETN:
-		r.flagr |= FLAG_ENCON;
-		r.pc = ipop();
-		break;
 		// 64-bit Integer Arithmetic
 	case I_ADD64:
 		*rrvv64.reg1s += rrvv64.reg2vals;

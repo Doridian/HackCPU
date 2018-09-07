@@ -207,7 +207,12 @@ static uint64_t pop64() {
 #define DOJMPP(a)  { r.pc = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
-#define DOCALLP(a) { push(r.pc); push(r.bsp); r.bsp = r.csp; DOJMPP(a); }
+#define DOCALLP(a) { \
+	push(r.pc); \
+	push(r.bsp); \
+	r.bsp = r.csp; \
+	DOJMPP(a); \
+}
 
 #define IFZ()  if (rrvv32.reg1val == 0)
 #define IFNZ() if (rrvv32.reg1val != 0)

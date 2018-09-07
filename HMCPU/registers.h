@@ -71,8 +71,8 @@ typedef union registers_t {
 				};
 			};
 		};
-		uint32_t psp;
 		uint32_t csp;
+		uint32_t bsp;
 		uint32_t pc;
 		union {
 			uint32_t msr;

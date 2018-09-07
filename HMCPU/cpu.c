@@ -166,36 +166,27 @@ ireadrrvvN(32, float)
 ireadrrvvN(64, double)
 
 static void push(uint32_t i) {
-	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.psp));
-	r.psp += 4;
-	*m32 = i;
-}
-
-static void ipush(uint32_t i) {
+	r.csp -= 4;
 	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.csp));
-	r.csp += 4;
 	*m32 = i;
 }
 
 static void push64(uint64_t i) {
-	uint64_t* m64 = (uint64_t*)(m + constrain_ram(r.psp));
-	r.psp += 8;
+	r.csp -= 8;
+	uint64_t* m64 = (uint64_t*)(m + constrain_ram(r.csp));
 	*m64 = i;
 }
 
 static uint32_t pop() {
-	r.psp -= 4;
-	return *(uint32_t*)(m + constrain_ram(r.psp));
+	uint32_t res = *(uint32_t*)(m + constrain_ram(r.csp));
+	r.csp += 4;
+	return res;
 }
 
 static uint64_t pop64() {
-	r.psp -= 8;
-	return *(uint64_t*)(m + constrain_ram(r.psp));
-}
-
-static uint32_t ipop() {
-	r.csp -= 4;
-	return *(uint32_t*)(m + constrain_ram(r.csp));
+	uint64_t res = *(uint64_t*)(m + constrain_ram(r.csp));
+	r.csp += 8;
+	return res;
 }
 
 #define DOCMP(a, b) r.flagr = (r.flagr & FLAG_NOCMP) | \
@@ -211,12 +202,12 @@ static uint32_t ipop() {
 #define IFLTE() if   (r.flagr & (FLAG_LT|FLAG_EQ))
 #define IFGT()  if (!(r.flagr & (FLAG_LT|FLAG_EQ)))
 
-#define DOJMP()	DOJMPP(1);
+#define DOJMP()	   DOJMPP(1);
 #define DOJMPZ()   DOJMPP(2);
 #define DOJMPP(a)  { r.pc = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
-#define DOCALLP(a) { ipush(r.pc); DOJMPP(a); }
+#define DOCALLP(a) { push(r.pc); push(r.bsp); r.bsp = r.csp; DOJMPP(a); }
 
 #define IFZ()  if (rrvv32.reg1val == 0)
 #define IFNZ() if (rrvv32.reg1val != 0)
@@ -342,7 +333,6 @@ uint8_t cpu_run() {
 
 static uint8_t _cpu_step() {
 	uint8_t op = iread8();
-
 	if (op >= I_FIRST_INVALID) {
 		return interrupt(INT_ILLEGAL_OPCODE);
 	}
@@ -518,7 +508,9 @@ static uint8_t _cpu_step() {
 		IFNZ() { DOCALLZ(); }
 		break;
 	case I_RETN:
-		r.pc = ipop();
+		r.csp = r.bsp;
+		r.bsp = pop();
+		r.pc = pop();
 		break;
 		// Special
 	case I_INT:

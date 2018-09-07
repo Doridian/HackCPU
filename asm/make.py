@@ -17,8 +17,8 @@ REGISTERS = {
 	"R5":      4,
 	"R6":      5,
 
-	"PSP":     6,
-	"CSP":     7,
+	"CSP":     6,
+	"BSP":     7,
 	"PC":      8,
 	"MSR":     9,
 	"ENCREG1": 10,
@@ -29,6 +29,12 @@ REGISTERS = {
 	"R34":     2,
 	"R56":     4,
 	"ENCREG":  10,
+
+	"SP":		6,
+	"AX":		0,
+	"BX":		1,
+	"CX":		2,
+	"DX":		3,
 }
 REG_CREG = 13
 REG_MREG = 14
@@ -106,8 +112,13 @@ class Parameter:
 				self.rval = REGISTERS[src]
 				self.cval = None
 		else:
-			self.rval = __creg
-			self.cval = int(src, 0) + offset
+			try:
+				self.rval = __creg
+				self.cval = int(src, 0) + offset
+			except:
+				self.rval = __creg
+				self.cval = src
+				self.cval_offset = offset
 
 	def len(self, b64):
 		if self.cval == None:
@@ -262,74 +273,99 @@ class AlignInstruction:
 # Reg to refer to a register
 # So you can do @R1 to "RAM value at address value of R1"
 
-for line in in_f:
-	line = line.strip()
-	if len(line) < 1:
-		continue
+currentLine = ""
 
-	insn = None
-	lineSpacePos = line.find(" ")
-	if lineSpacePos < 0:
-		opcodeName = line
-		lsplit = []
-	else:
-		opcodeName = line[0:lineSpacePos]
-		lsplit = line[lineSpacePos+1:].strip().split(",")
+def parse():
+	global currentLine
+	global baseaddr
+	global enccpos
+	global labels
+	global instructions
 
-	if opcodeName[0] == ":":
-		insn = Instruction(OPCODES["REM"], [])
-		instructions.append(insn)
-		labels[opcodeName[1:]] = insn
-	elif opcodeName[0] == "#":
-		doenc = len(lsplit) > 0
-		int_enckkey = int(0)
-		if opcodeName == "#ROM":
-			if doenc:
-				int_enckkey = int(lsplit[0], 0)
-			baseaddr = -1
-			b = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
-			out_f.write(b)
-			instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
-		elif opcodeName == "#BOOTLOADER":
-			if doenc:
-				int_enckkey = int(lsplit[0], 0)
-			baseaddr = 0
-			if doenc:
-				instructions.append(Instruction(OPCODES["NOP"]))
-				instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
-				instructions.append(Instruction(OPCODES["ENCON"]))
-				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
-		elif opcodeName == "#ALIGN":
-			instructions.append(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
-	else:
-		opc = OPCODES[opcodeName]
-		if opc.name == "DB":
-			lbl = "db_" + lsplit[0]
-			rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
-			if rawData[0] == '"':
-				if rawData[-1] != '"' or len(rawData) < 2:
-					raise ValueError("Missing closing quote in DB string")
-				rawData = bytes(rawData[1:-1], "ascii")
-			elif rawData[0:1] == "0x":
-				rawData = unhexlify(rawData[2:])
-			else:
-				rawData = unhexlify(rawData.replace(" ", ""))
-			lstr = Parameter(rawData, True)
-			insn = Instruction(opc, [lstr])
-			labels[lbl] = insn
-			labels[lbl + "_len"] = lstr.len(False)
+	for line in in_f:
+		line = line.strip()
+
+		if len(line) < 1:
+			continue
+
+		lineCommentPos = line.find(";")
+		if lineCommentPos > 0:
+			line = line[:lineCommentPos]
+
+		if len(line) < 1:
+			continue
+
+		currentLine = line
+
+		insn = None
+		lineSpacePos = line.find(" ")
+		if lineSpacePos < 0:
+			opcodeName = line
+			lsplit = []
 		else:
-			insn = Instruction(opc, list(map(Parameter, lsplit)))
+			opcodeName = line[0:lineSpacePos]
+			lsplit = line[lineSpacePos+1:].strip().split(",")
 
-	if insn != None:
-		instructions.append(insn)
+		if opcodeName[0] == ":":
+			insn = Instruction(OPCODES["REM"], [])
+			instructions.append(insn)
+			labels[opcodeName[1:]] = insn
+		elif opcodeName[0] == "#" or opcodeName[0] == ";":
+			doenc = len(lsplit) > 0
+			int_enckkey = int(0)
+			if opcodeName == "#ROM":
+				if doenc:
+					int_enckkey = int(lsplit[0], 0)
+				baseaddr = -1
+				b = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
+				out_f.write(b)
+				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+			elif opcodeName == "#BOOTLOADER":
+				if doenc:
+					int_enckkey = int(lsplit[0], 0)
+				baseaddr = 0
+				if doenc:
+					instructions.append(Instruction(OPCODES["NOP"]))
+					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
+					instructions.append(Instruction(OPCODES["ENCON"]))
+					instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+			elif opcodeName == "#ALIGN":
+				instructions.append(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
+		else:
+			opc = OPCODES[opcodeName]
+			if opc.name == "DB":
+				lbl = "db_" + lsplit[0]
+				rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
+				if rawData[0] == '"':
+					if rawData[-1] != '"' or len(rawData) < 2:
+						raise ValueError("Missing closing quote in DB string")
+					rawData = bytes(rawData[1:-1], "ascii")
+				elif rawData[0:1] == "0x":
+					rawData = unhexlify(rawData[2:])
+				else:
+					rawData = unhexlify(rawData.replace(" ", ""))
+				lstr = Parameter(rawData, True)
+				insn = Instruction(opc, [lstr])
+				labels[lbl] = insn
+				labels[lbl + "_len"] = lstr.len(False)
+			else:
+				insn = Instruction(opc, list(map(Parameter, lsplit)))
 
-if baseaddr < 0:
-	baseaddr = RAM_SIZE - bpos
-	enccpos = baseaddr % 8
+		if insn != None:
+			instructions.append(insn)
 
-for insn in instructions:
-	insn.write()
+	if baseaddr < 0:
+		baseaddr = RAM_SIZE - bpos
+		enccpos = baseaddr % 8
 
-in_f.close()
-out_f.close()
+	for insn in instructions:
+		insn.write()
+
+	in_f.close()
+	out_f.close()
+
+try:
+	parse()
+except:
+	print(currentLine)
+	raise

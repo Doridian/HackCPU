@@ -86,8 +86,8 @@ int main(int argc, const char **argv) {
 		printf(" (Invalid register access)\n");
 		break;
 	case ERR_UNHANDLED_INTERRUPT:
-		if (r.psp > 2 && r.psp <= RAM_SIZE) {
-			intnum = m[r.psp - 2];
+		if (r.csp > 2 && r.csp <= RAM_SIZE) {
+			intnum = m[r.csp - 2];
 		} else {
 			intnum = 0xFF;
 		}
@@ -109,7 +109,7 @@ int main(int argc, const char **argv) {
 		printf("\n");
 	}
 
-	printf("Registers:\nR1=0x%08x R2=0x%08x R3=0x%08x R4=0x%08x R5=0x%08x R6=0x%08x\nPSP=0x%08x CSP=0x%08x PC=0x%08x IHBASE=0x%08x\nFLAG=0b" BYTE_TO_BINARY_PATTERN " ENCREG=0x%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, BYTE_TO_BINARY(r.flagr), r.encreg12);
+	printf("Registers:\nR1=0x%08x R2=0x%08x R3=0x%08x R4=0x%08x R5=0x%08x R6=0x%08x\nCSP=0x%08x BSP=0x%08x PC=0x%08x IHBASE=0x%08x\nFLAG=0b" BYTE_TO_BINARY_PATTERN " ENCREG=0x%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.csp, r.bsp, r.pc, r.ihbase, BYTE_TO_BINARY(r.flagr), r.encreg12);
 
 	printf("Memory around PC(-1) region:");
 	int j = 0;

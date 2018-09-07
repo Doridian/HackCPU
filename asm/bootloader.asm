@@ -1,6 +1,7 @@
 #BOOTLOADER 0xDEADBEEFB00B5303
 MOV IHBASE, 0
-MOV PSP, :RAM_SIZE - 33
+MOV CSP, :RAM_SIZE - 33
+MOV BSP, CSP
 XOR R1, R1
 XOR R2, R2
 XOR R3, R3
@@ -37,10 +38,7 @@ MOV IHBASE, R2
 # We need 1024 (256 * 4) space, but since we can use the ROM's first 8 bytes which are only needed to boot (enc key) and then zero'd by us
 SUB IHBASE, 1016
 
-MOV PSP, IHBASE
-SUB PSP, 4096
-MOV CSP, PSP
-SUB CSP, 4096
+MOV CSP, IHBASE
 
 MOV64 R34, [R2]
 MOV64 [R2], 0
@@ -48,8 +46,9 @@ XOR R3, 0xBEBADEFA
 XOR R4, 0x0BB0FECA
 
 ADD R2, 8
-MOV [CSP], R2
-ADD CSP, 4
+PUSH R2
+PUSH BSP
+MOV BSP, CSP
 
 MOV R1, 256
 :unset_ih
@@ -76,7 +75,7 @@ JNZ ENCREG2, :romwithenc
 RETN
 :romwithenc
 XOR [:romwithenc_retn], ENCREG
+#ALIGN 8, 7
 ENCON
-#ALIGN 4, 0
 :romwithenc_retn
 RETN

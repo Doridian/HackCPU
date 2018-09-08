@@ -23,6 +23,9 @@
 
 uint64_t cpu_instruction_counter;
 
+typedef uint8_t(*cpu_interrupt_handler)(uint8_t interrupt);
+cpu_interrupt_handler cpu_interrupts[256];
+
 void cpu_init();
 void cpu_reset();
 uint8_t cpu_run();

@@ -42,6 +42,7 @@ static uint8_t dummyrom_read(struct iostream_t* io) {
 
 void cpu_init() {
 	//memclear(m, RAM_SIZE);
+	memclear(cpu_interrupts, sizeof(cpu_interrupts));
 
 	// stdout
 	io[IO_STDOUT].rptr = 0;
@@ -232,6 +233,10 @@ static uint64_t pop64() {
 
 static uint8_t cpu_interrupt(uint8_t i) {
 	if (i > 7) {
+		cpu_interrupt_handler custom = cpu_interrupts[i];
+		if (custom) {
+			return custom(i);
+		}
 		return ERR_UNHANDLED_INTERRUPT;
 	}
 	uint32_t ioid = pop();

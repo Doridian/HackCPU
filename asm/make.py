@@ -355,7 +355,10 @@ def parse():
 					useopc = "RETN"
 				elif len(lsplit) == 1:
 					try:
-						lsplit[0] = "%d" % (int(lsplit[0], 10) * 4)
+						x = int(lsplit[0], 10) * 4
+						if x > 0xFF:
+							raise ValueError("Too large for RETNAC")
+						lsplit[0] = "%d" % x
 						useopc = "RETNAC"
 					except:
 						useopc = "RETNA"

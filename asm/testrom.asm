@@ -1,7 +1,7 @@
 #ROM 0x123456789abcdef0
 MOV IHBASE, 0
 # RAM TEST 8-bit
-MOV R3, :endaddr
+MOV R3, :ENDADDR
 MOV R2, R3
 MOD R2, 4
 SUB R3, R2
@@ -43,4 +43,3 @@ NOP
 NOP
 NOP
 NOP
-:endaddr

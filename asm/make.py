@@ -354,6 +354,9 @@ def parse():
 		enccpos = baseaddr % 8
 
 	labels["BASEADDR"] = baseaddr
+	insn = Instruction(OPCODES["REM"], [])
+	instructions.append(insn)
+	labels["ENDADDR"] = insn
 
 	for insn in instructions:
 		insn.write()

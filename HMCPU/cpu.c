@@ -239,6 +239,7 @@ static uint8_t cpu_interrupt(uint8_t i) {
 		}
 		return ERR_UNHANDLED_INTERRUPT;
 	}
+
 	uint32_t ioid = pop();
 	if (ioid >= IOSTREAM_COUNT) {
 		return ERR_INVALID_IO;

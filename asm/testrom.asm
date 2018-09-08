@@ -27,17 +27,17 @@ DB ramok, "RAM OK"
 :ram_write
 MOVARG R1, 1
 MOV [R1], 0x37133713
-DRET 4
+DRET 1
 
 :ram_check
 MOVARG R1, 1
 CMP [R1], 0x37133713
 JNE :ram_check_fail
 MOV R1, 1
-DRET 4
+DRET 1
 :ram_check_fail
 MOV R1, 0
-DRET 4
+DRET 1
 
 NOP
 NOP

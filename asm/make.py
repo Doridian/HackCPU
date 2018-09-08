@@ -355,7 +355,7 @@ def parse():
 					useopc = "RETN"
 				elif len(lsplit) == 1:
 					try:
-						int(lsplit[0], 10)
+						lsplit[0] = "%d" % (int(lsplit[0], 10) * 4)
 						useopc = "RETNAC"
 					except:
 						useopc = "RETNA"

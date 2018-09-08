@@ -318,7 +318,8 @@ def parse():
 			elif opcodeName == "#BOOTLOADER":
 				if doenc:
 					int_enckkey = int(lsplit[0], 0)
-				baseaddr = RAM_SIZE >> 1
+				baseaddr = RAM_SIZE - int(lsplit[1], 0)
+				suffix = baseaddr.to_bytes(4, BYTEORDER)
 				if doenc:
 					instructions.append(Instruction(OPCODES["NOP"]))
 					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))

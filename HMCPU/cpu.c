@@ -22,10 +22,11 @@ static void memclear(void *ptr, size_t num) {
 void cpu_reset() {
 	memclear(&r, sizeof(r));
 	int i;
-	for (i = 0; i < sizeof(BOOTLOADER); i++) {
-		m[i + BOOTLOADER_BASEADDR] = BOOTLOADER[i];
+	uint32_t bootloader_baseaddr = *(uint32_t*)(BOOTLOADER + sizeof(BOOTLOADER) - 4);
+	for (i = 0; i < sizeof(BOOTLOADER) - 4; i++) {
+		m[i + bootloader_baseaddr] = BOOTLOADER[i];
 	}
-	r.pc = BOOTLOADER_BASEADDR;
+	r.pc = bootloader_baseaddr;
 	cpu_needs_reset = 0;
 	cpu_instruction_counter = 0;
 }

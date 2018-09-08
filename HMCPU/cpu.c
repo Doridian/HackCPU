@@ -372,11 +372,7 @@ static uint8_t _cpu_step() {
 			return ERR_INVALID_REGISTER;
 		}
 		break;
-	case IT_V8: // Handled by the insn itself
-	case IT_V8V8: // Handled by the insn itself
-	default:
-	case IT_N:
-		break;
+	// All other cases are handled by the instruction itself
 	}
 
 	switch (op) {

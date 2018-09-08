@@ -102,8 +102,10 @@ enum ITYPE {
 	IT_RRVV = 0,
 	IT_N,
 	IT_RRVV64,
-	IT_V8,
-	IT_V8V8,
+	IT_I8,
+	IT_I8I8,
+	IT_U8,
+	IT_U8U8,
 	IT_INVALID
 };
 
@@ -199,7 +201,7 @@ static uint8_t ITYPES[] = {
 	IT_RRVV,
 	IT_N,
 	IT_N,
-	IT_V8,
+	IT_U8,
 };
 
 #endif // OPCODES_H_INCLUDED

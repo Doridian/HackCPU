@@ -3,9 +3,11 @@ IT_RRVV = 0
 IT_N = 1
 IT_RRVV64 = 2
 IT_VIRTUAL = 3
-IT_V8 = 4
-IT_V8V8 = 5
-IT_INVALID = 6
+IT_I8 = 4
+IT_I8I8 = 5
+IT_U8 = 6
+IT_U8U8 = 7
+IT_INVALID = 8
 
 class OpCode:
 	def __init__(self, i, itype, iname):
@@ -106,7 +108,7 @@ OPCODES = {
 	"RETNA": OpCode(78, IT_RRVV, "RETNA"),
 	"POPNIL": OpCode(79, IT_N, "POPNIL"),
 	"POPNIL64": OpCode(80, IT_N, "POPNIL64"),
-	"RETNAC": OpCode(81, IT_V8, "RETNAC"),
+	"RETNAC": OpCode(81, IT_U8, "RETNAC"),
 	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),

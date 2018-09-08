@@ -172,7 +172,7 @@ class Instruction:
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
 
-		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
+		if self.opcode.type == IT_I8 or self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8:
 			return 1 + len(self.params)
 
 		mylen = 1 + ceil(len(self.params) / 2)
@@ -205,14 +205,14 @@ class Instruction:
 
 		plen = len(self.params)
 
-		if self.opcode.type == IT_V8 or self.opcode.type == IT_V8V8:
-			if self.opcode.type == IT_V8 and plen != 1:
+		if self.opcode.type == IT_I8 or self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8:
+			if (self.opcode.type == IT_I8 or self.opcode.type == IT_U8) and plen != 1:
 				raise ValueError("Instruction only expects one argument")
-			if self.opcode.type == IT_V8V8 and plen != 2:
+			if (self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8U8) and plen != 2:
 				raise ValueError("Instruction expects two arguments")
 
 			for i in range(0, plen):
-				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER))
+				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=(self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8)))
 			return
 
 		if self.opcode.type == IT_N:

@@ -349,6 +349,26 @@ def parse():
 				insn = Instruction(opc, [lstr])
 				labels[lbl] = insn
 				labels[lbl + "_len"] = lstr.len(False)
+			elif opc.name == "DRET":
+				useopc = None
+				if len(lsplit) == 0:
+					useopc = "RETN"
+				elif len(lsplit) == 1:
+					try:
+						int(lsplit[0], 10)
+						useopc = "RETNAC"
+					except:
+						useopc = "RETNA"
+				else:
+					raise ValueError("DRET only supports 0 or 1 parameter")
+				insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))
+			elif opc.name == "MOVARG":
+				p1 = Parameter(lsplit[0])
+				argno = int(lsplit[1], 10)
+				if argno < 1:
+					raise ValueError("MOVARG argno must be at least 1")
+				p2 = Parameter("[BSP + %d]" % ((argno * 4) + 4))
+				insn = Instruction(OPCODES["MOV"], [p1, p2])
 			else:
 				insn = Instruction(opc, list(map(Parameter, lsplit)))
 

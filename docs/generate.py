@@ -69,6 +69,8 @@ OPCODES = {
 	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),
+	"DRET": OpCode(-1, IT_VIRTUAL, "DRET"),
+	"MOVARG": OpCode(-1, IT_VIRTUAL, "MOVARG"),
 	"__ENABLE_ENC": OpCode(-1, IT_VIRTUAL, "__ENABLE_ENC"),
 	"__DISABLE_ENC": OpCode(-1, IT_VIRTUAL, "__DISABLE_ENC"),
 }

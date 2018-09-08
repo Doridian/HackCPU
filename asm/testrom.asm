@@ -25,19 +25,19 @@ HALT
 DB ramok, "RAM OK"
 
 :ram_write
-MOV R1, [BSP + 8]
+MOVARG R1, 1
 MOV [R1], 0x37133713
-RETNAC 4
+DRET 4
 
 :ram_check
-MOV R1, [BSP + 8]
+MOVARG R1, 1
 CMP [R1], 0x37133713
 JNE :ram_check_fail
 MOV R1, 1
-RETNAC 4
+DRET 4
 :ram_check_fail
 MOV R1, 0
-RETNAC 4
+DRET 4
 
 NOP
 NOP

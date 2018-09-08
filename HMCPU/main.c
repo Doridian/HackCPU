@@ -17,6 +17,22 @@
   (byte & 0x02 ? '1' : '0'), \
   (byte & 0x01 ? '1' : '0') 
 
+#ifdef _WIN32
+#include <Windows.h>
+static uint64_t get_highres_timestamp() {
+	uint64_t time;
+	QueryPerformanceCounter((LARGE_INTEGER *)&time);
+	return time;
+}
+
+static double get_milliseconds(uint64_t start, uint64_t end) {
+	uint64_t freq;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+	double dFreq = 1.0 / freq;
+
+	return (end - start) * dFreq * 1000.0;
+}
+#endif
 
 static void stdout_write(struct iostream_t* io, uint8_t i) {
 	putc(i, stdout);
@@ -54,7 +70,7 @@ int main(int argc, const char **argv) {
 		io[IO_ROM].length = (uint32_t)romlen;
 		io[IO_ROM].read = fhrom_read;
 		rewind(romfh);
-		fhrom_data = malloc(romlen);
+		fhrom_data = (uint8_t*)malloc(romlen);
 		fread(fhrom_data, romlen, 1, romfh);
 		fclose(romfh);
 	}
@@ -63,7 +79,9 @@ int main(int argc, const char **argv) {
 
 	cpu_reset();
 
+	uint64_t start_time = get_highres_timestamp();
 	uint8_t res = cpu_run();
+	uint64_t end_time = get_highres_timestamp();
 	//if (res == ERR_HALT) {
 	//	return 0;
 	//}
@@ -108,6 +126,23 @@ int main(int argc, const char **argv) {
 	default:
 		printf("\n");
 	}
+
+	double time_taken = get_milliseconds(start_time, end_time);
+	double ops_per_time = (cpu_instruction_counter / time_taken) * 1000.0;
+	char ops_unit = ' ';
+	if (ops_per_time >= 1000000000) {
+		ops_unit = 'G';
+		ops_per_time /= 1000000000;
+	}
+	else if (ops_per_time >= 1000000) {
+		ops_unit = 'M';
+		ops_per_time /= 1000000;
+	}
+	else if (ops_per_time >= 1000) {
+		ops_unit = 'k';
+		ops_per_time /= 1000;
+	}
+	printf("Instructions executed: %" PRIi64 " in %f ms (%f %cops/s)\n", cpu_instruction_counter, time_taken, ops_per_time, ops_unit);
 
 	printf("Registers:\nR1=0x%08x R2=0x%08x R3=0x%08x R4=0x%08x R5=0x%08x R6=0x%08x\nCSP=0x%08x BSP=0x%08x PC=0x%08x IHBASE=0x%08x\nFLAG=0b" BYTE_TO_BINARY_PATTERN " ENCREG=0x%016" PRIx64 "\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.csp, r.bsp, r.pc, r.ihbase, BYTE_TO_BINARY(r.flagr), r.encreg12);
 

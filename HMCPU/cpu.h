@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+uint64_t cpu_instruction_counter;
+
 void cpu_init();
 void cpu_reset();
 uint8_t cpu_run();

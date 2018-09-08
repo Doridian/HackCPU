@@ -10,6 +10,7 @@
 #define REG_FLAG_OFFSET 0b10000
 
 uint8_t cpu_needs_reset = 1;
+uint64_t cpu_instruction_counter = 0;
 
 static void memclear(void *ptr, size_t num) {
 	uint8_t *ptrb = (uint8_t *)ptr;
@@ -26,6 +27,7 @@ void cpu_reset() {
 	}
 	r.pc = BOOTLOADER_BASEADDR;
 	cpu_needs_reset = 0;
+	cpu_instruction_counter = 0;
 }
 
 static void devzero_write(struct iostream_t* io, uint8_t i) { }
@@ -338,6 +340,7 @@ uint8_t cpu_run() {
 }
 
 static uint8_t _cpu_step() {
+	cpu_instruction_counter++;
 	uint8_t op = iread8();
 	if (op >= I_FIRST_INVALID) {
 		return interrupt(INT_ILLEGAL_OPCODE);

@@ -29,12 +29,6 @@ REGISTERS = {
 	"R34":     2,
 	"R56":     4,
 	"ENCREG":  10,
-
-	"SP":		6,
-	"AX":		0,
-	"BX":		1,
-	"CX":		2,
-	"DX":		3,
 }
 REG_CREG = 13
 REG_MREG = 14

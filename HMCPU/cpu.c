@@ -22,8 +22,9 @@ void cpu_reset() {
 	memclear(&r, sizeof(r));
 	int i;
 	for (i = 0; i < sizeof(BOOTLOADER); i++) {
-		m[i] = BOOTLOADER[i];
+		m[i + BOOTLOADER_BASEADDR] = BOOTLOADER[i];
 	}
+	r.pc = BOOTLOADER_BASEADDR;
 	cpu_needs_reset = 0;
 }
 

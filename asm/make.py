@@ -276,6 +276,8 @@ def parse():
 	global labels
 	global instructions
 
+	suffix = None
+
 	for line in in_f:
 		line = line.strip()
 
@@ -310,14 +312,13 @@ def parse():
 			if opcodeName == "#ROM":
 				if doenc:
 					int_enckkey = int(lsplit[0], 0)
-				baseaddr = -1
-				b = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
-				out_f.write(b)
+				baseaddr = 0
+				suffix = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
 				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
 			elif opcodeName == "#BOOTLOADER":
 				if doenc:
 					int_enckkey = int(lsplit[0], 0)
-				baseaddr = 0
+				baseaddr = RAM_SIZE >> 1
 				if doenc:
 					instructions.append(Instruction(OPCODES["NOP"]))
 					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
@@ -352,8 +353,13 @@ def parse():
 		baseaddr = RAM_SIZE - bpos
 		enccpos = baseaddr % 8
 
+	labels["BASEADDR"] = baseaddr
+
 	for insn in instructions:
 		insn.write()
+
+	if suffix != None:
+		out_f.write(suffix)
 
 	in_f.close()
 	out_f.close()

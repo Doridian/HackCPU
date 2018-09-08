@@ -1,6 +1,6 @@
 #BOOTLOADER 0xDEADBEEFB00B5303
 MOV IHBASE, 0
-MOV CSP, :RAM_SIZE - 33
+MOV CSP, 32
 MOV BSP, CSP
 XOR R1, R1
 XOR R2, R2
@@ -8,6 +8,7 @@ XOR R3, R3
 XOR R4, R4
 XOR R5, R5
 XOR R6, R6
+:CLEAREND
 
 # Read ROM to RAM
 PUSH 1
@@ -24,31 +25,42 @@ HALT
 DB romtooshort, "ROM too short or not present"
 
 :keeploading
+CMP R1, :CLEAREND
+JLE :keeploading2
+
+PUSH :db_romtoolong_len
+PUSH :db_romtoolong
+PUSH 0
+INT 0
+HALT
+DB romtoolong, "ROM too long"
+
+:keeploading2
+MOV R3, :BASEADDR
+
+:selfclearloop
+MOV [R3], 0
+ADD R3, 4
+CMP R3, :CLEAREND
+JL :selfclearloop
+
 PUSH 1
 INT 7
-MOV R2, :RAM_SIZE - 1
-SUB R2, R1
-ADD R2, 1
 PUSH R1
-PUSH R2
+PUSH 0
 PUSH 1
 INT 1
 
-MOV IHBASE, R2
-# We need 1024 (256 * 4) space, but since we can use the ROM's first 8 bytes which are only needed to boot (enc key) and then zero'd by us
-SUB IHBASE, 1016
+MOV IHBASE, :RAM_SIZE - 1
+SUB IHBASE, 1024
 
 MOV CSP, IHBASE
+MOV BSP, CSP
 
-MOV64 R34, [R2]
-MOV64 [R2], 0
+MOV64 R34, [R1 - 8]
+MOV64 [R1 - 8], 0
 XOR R3, 0xBEBADEFA
 XOR R4, 0x0BB0FECA
-
-ADD R2, 8
-PUSH R2
-PUSH BSP
-MOV BSP, CSP
 
 MOV R1, 256
 :unset_ih
@@ -61,21 +73,13 @@ __DISABLE_ENC
 MOV64 ENCREG, R34
 XOR R3, R3
 XOR R4, R4
-MOV R1, PC
-MOV R2, R1
-MOD R2, 4
-SUB R1, R2
-XOR R2, R2
-:erase_bootloader
-SUB R1, 4
-MOV [R1], 0
-JNZ R1, :erase_bootloader
 JNZ ENCREG1, :romwithenc
 JNZ ENCREG2, :romwithenc
-RETN
+JMP 0
 :romwithenc
-XOR [:romwithenc_retn], ENCREG
+XOR [:romwithenc_retn], ENCREG1
+XOR [:romwithenc_retn + 4], ENCREG2
 #ALIGN 8, 7
 ENCON
 :romwithenc_retn
-RETN
+JMP 0

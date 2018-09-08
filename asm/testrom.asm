@@ -8,8 +8,8 @@ SUB R3, R2
 :8bittest_next
 PUSH R3
 CALL :ram_write
+PUSH R3
 CALL :ram_check
-POP R3
 CMP R1, 1
 JNE :test_fail
 ADD R3, 4
@@ -27,17 +27,17 @@ DB ramok, "RAM OK"
 :ram_write
 MOV R1, [BSP + 8]
 MOV [R1], 0x37133713
-RETN
+RETNA 1
 
 :ram_check
 MOV R1, [BSP + 8]
 CMP [R1], 0x37133713
 JNE :ram_check_fail
 MOV R1, 1
-RETN
+RETNA 1
 :ram_check_fail
 MOV R1, 0
-RETN
+RETNA 1
 
 NOP
 NOP

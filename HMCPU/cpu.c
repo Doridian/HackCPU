@@ -221,6 +221,12 @@ static uint64_t pop64() {
 	DOJMPP(a); \
 }
 
+#define DORETN() { \
+	r.csp = r.bsp; \
+	r.bsp = pop(); \
+	r.pc = pop(); \
+}
+
 #define IFZ()  if (rrvv32.reg1val == 0)
 #define IFNZ() if (rrvv32.reg1val != 0)
 
@@ -519,9 +525,7 @@ static uint8_t _cpu_step() {
 		IFNZ() { DOCALLZ(); }
 		break;
 	case I_RETN:
-		r.csp = r.bsp;
-		r.bsp = pop();
-		r.pc = pop();
+		DORETN();
 		break;
 		// Special
 	case I_INT:
@@ -619,6 +623,16 @@ static uint8_t _cpu_step() {
 		// Extra
 	case I_DEBUG:
 		//printf("Registers:\nR1=%08x R2=%08x R3=%08x R4=%08x R5=%08x R6=%08x\nPSP=%08x CSP=%08x PC=%08x IHBASE=%08x ENCREG=%016I64x\n", r.r1, r.r2, r.r3, r.r4, r.r5, r.r6, r.psp, r.csp, r.pc, r.ihbase, r.encreg12);
+		break;
+	case I_RETNA:
+		DORETN();
+		r.csp += rrvv32.reg1val * 4;
+		break;
+	case I_POPNIL:
+		r.csp += 4;
+		break;
+	case I_POPNIL64:
+		r.csp += 8;
 		break;
 	default:
 		return interrupt(INT_ILLEGAL_OPCODE);

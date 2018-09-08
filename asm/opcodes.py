@@ -103,6 +103,9 @@ OPCODES = {
 	"DIV64F": OpCode(76, IT_RRVV, "DIV64F"),
 	# Extra
 	"DEBUG": OpCode(77, IT_N, "DEBUG"),
+	"RETNA": OpCode(78, IT_RRVV, "RETNA"),
+	"POPNIL": OpCode(79, IT_N, "POPNIL"),
+	"POPNIL64": OpCode(80, IT_N, "POPNIL64"),
 	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),

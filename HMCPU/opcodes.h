@@ -91,6 +91,9 @@ enum INSTRUCTION {
 	I_DIV64F,
 	// Extra
 	I_DEBUG,
+	I_RETNA,
+	I_POPNIL,
+	I_POPNIL64,
 	I_FIRST_INVALID
 };
 
@@ -191,6 +194,9 @@ static uint8_t ITYPES[] = {
 	IT_RRVV,
 	IT_RRVV,
 	// Extra
+	IT_N,
+	IT_RRVV,
+	IT_N,
 	IT_N,
 };
 

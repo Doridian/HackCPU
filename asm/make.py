@@ -318,7 +318,12 @@ def parse():
 			elif opcodeName == "#BOOTLOADER":
 				if doenc:
 					int_enckkey = int(lsplit[0], 0)
-				baseaddr = RAM_SIZE - int(lsplit[1], 0)
+
+				bootloader_offset = int(lsplit[1], 0)
+				if bootloader_offset < 0:
+					baseaddr = RAM_SIZE + bootloader_offset
+				else:
+					baseaddr = bootloader_offset
 				suffix = baseaddr.to_bytes(4, BYTEORDER)
 				if doenc:
 					instructions.append(Instruction(OPCODES["NOP"]))

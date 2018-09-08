@@ -205,15 +205,18 @@ static uint64_t pop64() {
 #define IFLTE() if   (r.flagr & (FLAG_LT|FLAG_EQ))
 #define IFGT()  if (!(r.flagr & (FLAG_LT|FLAG_EQ)))
 
+#define PUSHCALLSTACK() { \
+	push(r.pc); \
+	push(r.bsp); \
+	r.bsp = r.csp; \
+}
 #define DOJMP()	   DOJMPP(1);
 #define DOJMPZ()   DOJMPP(2);
 #define DOJMPP(a)  { r.pc = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
 #define DOCALLP(a) { \
-	push(r.pc); \
-	push(r.bsp); \
-	r.bsp = r.csp; \
+	PUSHCALLSTACK(); \
 	DOJMPP(a); \
 }
 
@@ -315,9 +318,7 @@ static uint8_t interrupt_nopush(uint8_t i) {
 	if (newpc == 0) {
 		return cpu_interrupt(i);
 	}
-	if (i & 0b10000000) {
-		push(r.pc);
-	}
+	PUSHCALLSTACK();
 	r.pc = newpc;
 	return 0;
 }

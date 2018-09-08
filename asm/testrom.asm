@@ -27,17 +27,17 @@ DB ramok, "RAM OK"
 :ram_write
 MOV R1, [BSP + 8]
 MOV [R1], 0x37133713
-RETNA 1
+RETNAC 4
 
 :ram_check
 MOV R1, [BSP + 8]
 CMP [R1], 0x37133713
 JNE :ram_check_fail
 MOV R1, 1
-RETNA 1
+RETNAC 4
 :ram_check_fail
 MOV R1, 0
-RETNA 1
+RETNAC 4
 
 NOP
 NOP

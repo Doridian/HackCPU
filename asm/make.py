@@ -212,7 +212,7 @@ class Instruction:
 				raise ValueError("Instruction expects two arguments")
 
 			for i in range(0, plen):
-				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=True))
+				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER))
 			return
 
 		if self.opcode.type == IT_N:

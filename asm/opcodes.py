@@ -106,6 +106,7 @@ OPCODES = {
 	"RETNA": OpCode(78, IT_RRVV, "RETNA"),
 	"POPNIL": OpCode(79, IT_N, "POPNIL"),
 	"POPNIL64": OpCode(80, IT_N, "POPNIL64"),
+	"RETNAC": OpCode(81, IT_V8, "RETNAC"),
 	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),

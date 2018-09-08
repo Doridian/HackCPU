@@ -354,6 +354,8 @@ static uint8_t _cpu_step() {
 		return interrupt(INT_ILLEGAL_OPCODE);
 	}
 
+	uint8_t tmp8;
+
 	regregvalval32_t rrvv32;
 	regregvalval64_t rrvv64;
 
@@ -626,13 +628,18 @@ static uint8_t _cpu_step() {
 		break;
 	case I_RETNA:
 		DORETN();
-		r.csp += rrvv32.reg1val * 4;
+		r.csp += rrvv32.reg1val;
 		break;
 	case I_POPNIL:
 		r.csp += 4;
 		break;
 	case I_POPNIL64:
 		r.csp += 8;
+		break;
+	case I_RETNAC:
+		tmp8 = iread8();
+		DORETN();
+		r.csp += tmp8;
 		break;
 	default:
 		return interrupt(INT_ILLEGAL_OPCODE);

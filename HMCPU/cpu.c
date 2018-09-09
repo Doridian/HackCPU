@@ -43,11 +43,6 @@ void cpu_set_io(cpu_state s, int id, iostream_t iostr) {
 cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 	cpu_state s = mem_alloc(sizeof(cpu_state_t));
 
-	if (iocount < 4) {
-		iocount = 4;
-	}
-	s->iocount = iocount;
-	s->io = mem_alloc(sizeof(iostream_t*) * iocount);
 	s->id = cpuid;
 
 	s->ram_size = ram_size;
@@ -61,42 +56,54 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 	//mem_clear(m, RAM_SIZE);
 	mem_clear(s->interrupts, sizeof(s->interrupts));
 
-	iostream_t mkio;
-	// stdout
-	mkio.rptr = 0;
-	mkio.wptr = 0;
-	mkio.length = 0;
-	mkio.read = 0;
-	mkio.write = devzero_write;
-	mkio.flags = 0;
-	cpu_set_io(s, IO_STDOUT, mkio);
+	if (iocount < 4 && iocount > 0) {
+		iocount = 4;
+	}
+	s->iocount = iocount;
 
-	// ROM
-	mkio.rptr = 0;
-	mkio.wptr = 0;
-	mkio.length = sizeof(dummyrom);
-	mkio.read = dummyrom_read;
-	mkio.write = 0;
-	mkio.flags = IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
-	cpu_set_io(s, IO_ROM, mkio);
+	if (iocount > 0) {
+		s->io = mem_alloc(sizeof(iostream_t*) * iocount);
 
-	// stdin
-	mkio.rptr = 0;
-	mkio.wptr = 0;
-	mkio.length = 0;
-	mkio.read = devzero_read;
-	mkio.write = 0;
-	mkio.flags = 0;
-	cpu_set_io(s, IO_STDIN, mkio);
+		iostream_t mkio;
+		// stdout
+		mkio.rptr = 0;
+		mkio.wptr = 0;
+		mkio.length = 0;
+		mkio.read = 0;
+		mkio.write = devzero_write;
+		mkio.flags = 0;
+		cpu_set_io(s, IO_STDOUT, mkio);
 
-	// /dev/zero
-	mkio.rptr = 0;
-	mkio.wptr = 0;
-	mkio.length = 0;
-	mkio.read = devzero_read;
-	mkio.write = devzero_write;
-	mkio.flags = IO_FLAG_WPTR_GET|IO_FLAG_WPTR_SET|IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
-	cpu_set_io(s, IO_ZERO, mkio);
+		// ROM
+		mkio.rptr = 0;
+		mkio.wptr = 0;
+		mkio.length = sizeof(dummyrom);
+		mkio.read = dummyrom_read;
+		mkio.write = 0;
+		mkio.flags = IO_FLAG_RPTR_GET | IO_FLAG_RPTR_SET | IO_FLAG_LENGTH | IO_FLAG_RESET;
+		cpu_set_io(s, IO_ROM, mkio);
+
+		// stdin
+		mkio.rptr = 0;
+		mkio.wptr = 0;
+		mkio.length = 0;
+		mkio.read = devzero_read;
+		mkio.write = 0;
+		mkio.flags = 0;
+		cpu_set_io(s, IO_STDIN, mkio);
+
+		// /dev/zero
+		mkio.rptr = 0;
+		mkio.wptr = 0;
+		mkio.length = 0;
+		mkio.read = devzero_read;
+		mkio.write = devzero_write;
+		mkio.flags = IO_FLAG_WPTR_GET | IO_FLAG_WPTR_SET | IO_FLAG_RPTR_GET | IO_FLAG_RPTR_SET | IO_FLAG_LENGTH | IO_FLAG_RESET;
+		cpu_set_io(s, IO_ZERO, mkio);
+	}
+	else {
+		s->io = NULL;
+	}
 
 	cpu_reset(s);
 
@@ -120,6 +127,9 @@ void cpu_free(cpu_state s) {
 		mem_free(s->io);
 		s->io = NULL;
 	}
+
+	s->ram_size = 0;
+	s->iocount = 0;
 
 	mem_free(s);
 }

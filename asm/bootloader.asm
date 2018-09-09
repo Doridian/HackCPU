@@ -8,13 +8,10 @@ XOR R3, R3
 XOR R4, R4
 XOR R5, R5
 XOR R6, R6
-:CLEAREND
 
-# Store BL begin in R2, BL end in R5
+# Store BL begin in R2
 RAMSIZE R2
 SUB R2, 4096
-MOV R5, R2
-ADD R5, :CLEAREND
 
 # Read ROM to RAM
 PUSH 1
@@ -52,6 +49,10 @@ DB romtoolong, "ROM too long"
 :keeploading2
 MOV R3, R2
 
+:CLEAREND
+# Calc clear end in R5
+MOV R5, R2
+ADD R5, :CLEAREND
 MOV R6, :selfclearloop
 ADD R6, R2
 :selfclearloop

@@ -50,7 +50,7 @@ static uint8_t fhrom_read(uint32_t id, iostream_t* io) {
 #define HEXDUMP_SIZE 12
 
 int main(int argc, const char **argv) {
-	cpu_state s = cpu_init(16, 1, RAM_SIZE_DEFAULT);
+	cpu_state s = cpu_init(IO_COUNT_DEFAULT, 1, RAM_SIZE_DEFAULT);
 
 	if (argc > 1) {
 		const char *romfname = argv[1];

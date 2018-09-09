@@ -6,6 +6,8 @@
 #define IO_STDIN  2
 #define IO_ZERO   3
 
+#define IO_COUNT_DEFAULT 4
+
 #define IO_FLAG_WPTR_GET 0b1
 #define IO_FLAG_WPTR_SET 0b10
 #define IO_FLAG_RPTR_GET 0b100

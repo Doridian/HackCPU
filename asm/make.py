@@ -378,6 +378,8 @@ def parse():
 	if baseaddr < 0:
 		raise ValueError("baseaddr < 0")
 
+	enccpos = baseaddr % 8
+
 	labels["BASEADDR"] = baseaddr
 	insn = Instruction(OPCODES["REM"], [])
 	instructions.append(insn)

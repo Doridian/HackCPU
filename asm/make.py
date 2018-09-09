@@ -34,7 +34,6 @@ REG_CREG = 13
 REG_MREG = 14
 REG_MREGC = 15
 BYTEORDER = "little"
-RAM_SIZE = (1024 * 1024 * 4)
 
 baseaddr = None
 enckey = None
@@ -374,8 +373,7 @@ def parse():
 			instructions.append(insn)
 
 	if baseaddr < 0:
-		baseaddr = RAM_SIZE - bpos
-		enccpos = baseaddr % 8
+		raise ValueError("baseaddr < 0")
 
 	labels["BASEADDR"] = baseaddr
 	insn = Instruction(OPCODES["REM"], [])

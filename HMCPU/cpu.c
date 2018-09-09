@@ -249,7 +249,7 @@ static uint64_t pop64(cpu_state s) {
 	return res;
 }
 
-#define DOCMP(a, b) s->reg.flagr = (s->reg.flagr & FLAG_NOCMP) | ((a < b) << 1) | (a == b);
+#define DOCMP(a, b) { s->reg.flagr = (s->reg.flagr & FLAG_NOCMP) | ((a < b) << 1) | (a == b); }
 
 #define IFEQ()  if   (s->reg.flagr & FLAG_EQ)
 #define IFNEQ() if (!(s->reg.flagr & FLAG_EQ))

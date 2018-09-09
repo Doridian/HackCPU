@@ -88,8 +88,8 @@ int main(int argc, const char **argv) {
 	//}
 	printf("\n\n\nCPU exit code: %02x", res);
 
-	uint32_t opc = s->r.pc - 1;
-	if (s->r.pc == 0) {
+	uint32_t opc = s->reg.pc - 1;
+	if (s->reg.pc == 0) {
 		opc = s->ram_size - 1;
 	}
 
@@ -105,8 +105,8 @@ int main(int argc, const char **argv) {
 		printf(" (Invalid register access)\n");
 		break;
 	case ERR_UNHANDLED_INTERRUPT:
-		if (s->r.csp > 2 && s->r.csp <= s->ram_size) {
-			intnum = s->m[s->r.csp - 2];
+		if (s->reg.csp > 2 && s->reg.csp <= s->ram_size) {
+			intnum = s->ram[s->reg.csp - 2];
 		} else {
 			intnum = 0xFF;
 		}
@@ -116,7 +116,7 @@ int main(int argc, const char **argv) {
 			printf(" (CPU Error)");
 			break;
 		case INT_ILLEGAL_OPCODE:
-			printf(" (Illegal opcode %02x)", s->m[opc]);
+			printf(" (Illegal opcode %02x)", s->ram[opc]);
 			break;
 		case INT_TRAP:
 			printf(" (TRAP)");
@@ -145,7 +145,7 @@ int main(int argc, const char **argv) {
 	}
 	printf("Instructions executed: %" PRIi64 " in %f ms (%f %cops/s)\n", s->instruction_counter, time_taken, ops_per_time, ops_unit);
 
-	printf("\nRegisters:\nR1=0x%08x R2=0x%08x R3=0x%08x R4=0x%08x R5=0x%08x R6=0x%08x\nCSP=0x%08x BSP=0x%08x PC=0x%08x IHBASE=0x%08x\nFLAG=0b" BYTE_TO_BINARY_PATTERN " ENCREG=0x%016" PRIx64 "\n", s->r.r1, s->r.r2, s->r.r3, s->r.r4, s->r.r5, s->r.r6, s->r.csp, s->r.bsp, s->r.pc, s->r.ihbase, BYTE_TO_BINARY(s->r.flagr), s->r.encreg12);
+	printf("\nRegisters:\nR1=0x%08x R2=0x%08x R3=0x%08x R4=0x%08x R5=0x%08x R6=0x%08x\nCSP=0x%08x BSP=0x%08x PC=0x%08x IHBASE=0x%08x\nFLAG=0b" BYTE_TO_BINARY_PATTERN " ENCREG=0x%016" PRIx64 "\n", s->reg.r1, s->reg.r2, s->reg.r3, s->reg.r4, s->reg.r5, s->reg.r6, s->reg.csp, s->reg.bsp, s->reg.pc, s->reg.ihbase, BYTE_TO_BINARY(s->reg.flagr), s->reg.encreg12);
 
 	printf("Memory around PC(-1) region:");
 	uint32_t j = 0;
@@ -170,11 +170,11 @@ int main(int argc, const char **argv) {
 		}
 		for (j = i; j < imax && j < i + HEXDUMP_SIZE; j++) {
 			if (j == opc) {
-				printf("%02x<", s->m[j]);
+				printf("%02x<", s->ram[j]);
 			} else if (j == oopc && j < i + (HEXDUMP_SIZE - 1)) {
-				printf("%02x>", s->m[j]);
+				printf("%02x>", s->ram[j]);
 			} else {
-				printf("%02x ", s->m[j]);
+				printf("%02x ", s->ram[j]);
 			}
 		}
 		for (; j < i + 12; j++) {
@@ -182,7 +182,7 @@ int main(int argc, const char **argv) {
 		}
 		printf("| ");
 		for (j = i; j < imax && j < i + 12; j++) {
-			char c = s->m[j];
+			char c = s->ram[j];
 			if (c < 20 || c > 176) {
 				c = '.';
 			}

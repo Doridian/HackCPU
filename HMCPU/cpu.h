@@ -29,18 +29,19 @@
 typedef uint8_t(*cpu_interrupt_handler)(uint8_t interrupt);
 
 typedef struct cpu_state_t {
-	registers_t r;
-	uint8_t* m;
+	registers_t reg;
 	cpu_interrupt_handler interrupts[256];
 
+	uint8_t* ram;
+	uint32_t ram_size;
+
 	iostream_t** io;
-	uint32_t iocount;
+	uint32_t io_size;
 
 	uint32_t id;
-	uint64_t instruction_counter;
 
-	uint32_t ram_size;
-	uint8_t _needs_reset;
+	uint64_t instruction_counter;
+	uint8_t needs_reset;
 } cpu_state_t;
 
 typedef cpu_state_t* cpu_state;

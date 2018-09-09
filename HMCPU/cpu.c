@@ -10,7 +10,7 @@
 #define REG_FLAG_OFFSET 0b10000
 
 void cpu_reset(cpu_state s) {
-	mem_clear(&s->r, sizeof(s->r));
+	mem_clear(&s->reg, sizeof(s->reg));
 	int i;
 	int32_t bootloader_baseaddr = *(int32_t*)(BOOTLOADER + sizeof(BOOTLOADER) - 4);
 	if (bootloader_baseaddr < 0) {
@@ -18,10 +18,10 @@ void cpu_reset(cpu_state s) {
 		bootloader_baseaddr -= bootloader_baseaddr % 8;
 	}
 	for (i = 0; i < sizeof(BOOTLOADER) - 4; i++) {
-		s->m[i + bootloader_baseaddr] = BOOTLOADER[i];
+		s->ram[i + bootloader_baseaddr] = BOOTLOADER[i];
 	}
-	s->r.pc = bootloader_baseaddr;
-	s->_needs_reset = 0;
+	s->reg.pc = bootloader_baseaddr;
+	s->needs_reset = 0;
 	s->instruction_counter = 0;
 }
 
@@ -47,10 +47,10 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 
 	s->ram_size = ram_size;
 	if (ram_size > 0) {
-		s->m = mem_alloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
+		s->ram = mem_alloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
 	}
 	else {
-		s->m = NULL;
+		s->ram = NULL;
 	}
 
 	//mem_clear(m, RAM_SIZE);
@@ -59,7 +59,7 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 	if (iocount < 4 && iocount > 0) {
 		iocount = 4;
 	}
-	s->iocount = iocount;
+	s->io_size = iocount;
 
 	if (iocount > 0) {
 		s->io = mem_alloc(sizeof(iostream_t*) * iocount);
@@ -111,13 +111,13 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 }
 
 void cpu_free(cpu_state s) {
-	if (s->m != NULL) {
-		mem_free(s->m);
-		s->m = NULL;
+	if (s->ram != NULL) {
+		mem_free(s->ram);
+		s->ram = NULL;
 	}
 
 	if (s->io != NULL) {
-		for (uint32_t i = 0; i < s->iocount; i++) {
+		for (uint32_t i = 0; i < s->io_size; i++) {
 			iostream_t* io = s->io[i];
 			if (io != NULL) {
 				mem_free(io);
@@ -129,20 +129,20 @@ void cpu_free(cpu_state s) {
 	}
 
 	s->ram_size = 0;
-	s->iocount = 0;
+	s->io_size = 0;
 
 	mem_free(s);
 }
 
 static inline uint8_t iread8(cpu_state s) {
-	uint32_t opc = s->r.pc++;
+	uint32_t opc = s->reg.pc++;
 	if (opc >= s->ram_size) {
-		s->r.pc = 1;
+		s->reg.pc = 1;
 		opc = 0;
 	}
-	uint8_t raw = s->m[opc];
-	if (s->r.flagr & FLAG_ENCON) {
-		return raw ^ (uint8_t)((s->r.encreg12 >> ((opc % 8) << 3)) & 0xFF);
+	uint8_t raw = s->ram[opc];
+	if (s->reg.flagr & FLAG_ENCON) {
+		return raw ^ (uint8_t)((s->reg.encreg12 >> ((opc % 8) << 3)) & 0xFF);
 	}
 	return raw;
 }
@@ -175,17 +175,17 @@ static inline uint64_t iread64(cpu_state s) {
 	return __iread8_64(s) + (__iread8_64(s) << 8) + (__iread8_64(s) << 16) + (__iread8_64(s) << 24) + (__iread8_64(s) << 32) + (__iread8_64(s) << 40) + (__iread8_64(s) << 48) + (__iread8_64(s) << 56);
 }
 
-#define ireadrv(s, nbits, idx) res.reg##idx = (uint##nbits##_t*)(s->r.u + r##idx); \
+#define ireadrv(s, nbits, idx) res.reg##idx = (uint##nbits##_t*)(s->reg.u + r##idx); \
 	if (r##idx == CREG_ID) { \
-		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, s->r.pc)); \
+		res.reg##idx = (uint##nbits##_t*)(s->ram + constrain_ram(s, s->reg.pc)); \
 		res.reg##idx##val = iread##nbits(s); \
 	} else if (r##idx == MREG_ID) { \
 		uint8_t regid = iread8(s); \
 		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0(s) : 0; \
-		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, s->r.u[regid & 0x0F] + offset)); \
+		res.reg##idx = (uint##nbits##_t*)(s->ram + constrain_ram(s, s->reg.u[regid & 0x0F] + offset)); \
 		res.reg##idx##val = *res.reg##idx; \
 	} else if (r##idx == MREGC_ID) { \
-		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, iread32(s))); \
+		res.reg##idx = (uint##nbits##_t*)(s->ram + constrain_ram(s, iread32(s))); \
 		res.reg##idx##val = *(uint##nbits##_t*)res.reg##idx; \
 	} else if (r##idx >= REGISTERS_SIZE) { \
 		res.reg##idx = NULL; \
@@ -226,50 +226,50 @@ ireadrrvvN(32, float)
 ireadrrvvN(64, double)
 
 static void push(cpu_state s, uint32_t i) {
-	s->r.csp -= 4;
-	uint32_t* m32 = (uint32_t*)(s->m + constrain_ram(s, s->r.csp));
+	s->reg.csp -= 4;
+	uint32_t* m32 = (uint32_t*)(s->ram + constrain_ram(s, s->reg.csp));
 	*m32 = i;
 }
 
 static void push64(cpu_state s, uint64_t i) {
-	s->r.csp -= 8;
-	uint64_t* m64 = (uint64_t*)(s->m + constrain_ram(s, s->r.csp));
+	s->reg.csp -= 8;
+	uint64_t* m64 = (uint64_t*)(s->ram + constrain_ram(s, s->reg.csp));
 	*m64 = i;
 }
 
 static uint32_t pop(cpu_state s) {
-	uint32_t res = *(uint32_t*)(s->m + constrain_ram(s, s->r.csp));
-	s->r.csp += 4;
+	uint32_t res = *(uint32_t*)(s->ram + constrain_ram(s, s->reg.csp));
+	s->reg.csp += 4;
 	return res;
 }
 
 static uint64_t pop64(cpu_state s) {
-	uint64_t res = *(uint64_t*)(s->m + constrain_ram(s, s->r.csp));
-	s->r.csp += 8;
+	uint64_t res = *(uint64_t*)(s->ram + constrain_ram(s, s->reg.csp));
+	s->reg.csp += 8;
 	return res;
 }
 
-#define DOCMP(a, b) s->r.flagr = (s->r.flagr & FLAG_NOCMP) | \
-						  	    ((a < b) << 1) | \
-							    (a == b);
+#define DOCMP(a, b) s->reg.flagr = (s->reg.flagr & FLAG_NOCMP) | \
+						  	       ((a < b) << 1) | \
+							       (a == b);
 
-#define IFEQ()  if   (s->r.flagr & FLAG_EQ)
-#define IFNEQ() if (!(s->r.flagr & FLAG_EQ))
+#define IFEQ()  if   (s->reg.flagr & FLAG_EQ)
+#define IFNEQ() if (!(s->reg.flagr & FLAG_EQ))
 
-#define IFLT()  if   (s->r.flagr & FLAG_LT)
-#define IFGTE() if (!(s->r.flagr & FLAG_LT))
+#define IFLT()  if   (s->reg.flagr & FLAG_LT)
+#define IFGTE() if (!(s->reg.flagr & FLAG_LT))
 
-#define IFLTE() if   (s->r.flagr & (FLAG_LT|FLAG_EQ))
-#define IFGT()  if (!(s->r.flagr & (FLAG_LT|FLAG_EQ)))
+#define IFLTE() if   (s->reg.flagr & (FLAG_LT|FLAG_EQ))
+#define IFGT()  if (!(s->reg.flagr & (FLAG_LT|FLAG_EQ)))
 
 #define PUSHCALLSTACK() { \
-	push(s, s->r.pc); \
-	push(s, s->r.bsp); \
-	s->r.bsp = s->r.csp; \
+	push(s, s->reg.pc); \
+	push(s, s->reg.bsp); \
+	s->reg.bsp = s->reg.csp; \
 }
 #define DOJMP()	   DOJMPP(1);
 #define DOJMPZ()   DOJMPP(2);
-#define DOJMPP(a)  { s->r.pc = rrvv32.reg ## a ## val; }
+#define DOJMPP(a)  { s->reg.pc = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
 #define DOCALLP(a) { \
@@ -278,9 +278,9 @@ static uint64_t pop64(cpu_state s) {
 }
 
 #define DORETN() { \
-	s->r.csp = s->r.bsp; \
-	s->r.bsp = pop(s); \
-	s->r.pc = pop(s); \
+	s->reg.csp = s->reg.bsp; \
+	s->reg.bsp = pop(s); \
+	s->reg.pc  = pop(s); \
 }
 
 #define IFZ()  if (rrvv32.reg1val == 0)
@@ -296,7 +296,7 @@ static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
 	}
 
 	uint32_t ioid = pop(s);
-	if (ioid >= s->iocount) {
+	if (ioid >= s->io_size) {
 		return ERR_INVALID_IO;
 	}
 	iostream_t* iostr = s->io[ioid];
@@ -316,7 +316,7 @@ static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
 			if (x + offset >= s->ram_size) {
 				return ERR_INVALID_IO;
 			}
-			iostr->write(s->id, iostr, s->m[x + offset]);
+			iostr->write(s->id, iostr, s->ram[x + offset]);
 			iostr->wptr++;
 		}
 		break;
@@ -330,7 +330,7 @@ static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
 			if (x + offset >= s->ram_size) {
 				return ERR_INVALID_IO;
 			}
-			s->m[x + offset] = iostr->read(s->id, iostr);
+			s->ram[x + offset] = iostr->read(s->id, iostr);
 			iostr->rptr++;
 		}
 		break;
@@ -382,15 +382,15 @@ static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
 }
 
 static uint8_t interrupt_nopush(cpu_state s, uint8_t i) {
-	if (s->r.ihbase == 0) {
+	if (s->reg.ihbase == 0) {
 		return cpu_interrupt(s, i);
 	}
-	uint32_t newpc = *(uint32_t*)(s->m + constrain_ram(s, (i << 1) + s->r.ihbase));
+	uint32_t newpc = *(uint32_t*)(s->ram + constrain_ram(s, (i << 1) + s->reg.ihbase));
 	if (newpc == 0) {
 		return cpu_interrupt(s, i);
 	}
 	PUSHCALLSTACK();
-	s->r.pc = newpc;
+	s->reg.pc = newpc;
 	return 0;
 }
 
@@ -595,7 +595,7 @@ static uint8_t _cpu_step(cpu_state s) {
 	case I_INT:
 		return interrupt(s, rrvv32.reg1val);
 	case I_SETIH:
-		*(uint16_t*)(s->m + constrain_ram(s, ((rrvv32.reg1val & 0xFF) << 1) + s->r.ihbase)) = rrvv32.reg2val;
+		*(uint16_t*)(s->ram + constrain_ram(s, ((rrvv32.reg1val & 0xFF) << 1) + s->reg.ihbase)) = rrvv32.reg2val;
 		break;
 	case I_HALT:
 		return ERR_HALT;
@@ -603,23 +603,23 @@ static uint8_t _cpu_step(cpu_state s) {
 		cpu_reset(s);
 		break;
 	case I_TRAP:
-		s->r.flagr |= FLAG_TRAP;
+		s->reg.flagr |= FLAG_TRAP;
 		break;
 	case I_ENCOFF:
-		s->r.flagr &= ~FLAG_ENCON;
+		s->reg.flagr &= ~FLAG_ENCON;
 		break;
 	case I_ENCON:
-		s->r.flagr |= FLAG_ENCON;
+		s->reg.flagr |= FLAG_ENCON;
 		break;
 	case I_PUSHREG:
-		push64(s, s->r.r12);
-		push64(s, s->r.r34);
-		push64(s, s->r.r56);
+		push64(s, s->reg.r12);
+		push64(s, s->reg.r34);
+		push64(s, s->reg.r56);
 		break;
 	case I_POPREG:
-		s->r.r56 = pop64(s);
-		s->r.r34 = pop64(s);
-		s->r.r12 = pop64(s);
+		s->reg.r56 = pop64(s);
+		s->reg.r34 = pop64(s);
+		s->reg.r12 = pop64(s);
 		break;
 		// 64-bit Integer Arithmetic
 	case I_ADD64:
@@ -690,18 +690,18 @@ static uint8_t _cpu_step(cpu_state s) {
 		break;
 	case I_RETNA:
 		DORETN();
-		s->r.csp += rrvv32.reg1val;
+		s->reg.csp += rrvv32.reg1val;
 		break;
 	case I_POPNIL:
-		s->r.csp += 4;
+		s->reg.csp += 4;
 		break;
 	case I_POPNIL64:
-		s->r.csp += 8;
+		s->reg.csp += 8;
 		break;
 	case I_RETNAC:
 		tmp8 = iread8(s);
 		DORETN();
-		s->r.csp += tmp8;
+		s->reg.csp += tmp8;
 		break;
 	case I_CPUID:
 		*rrvv32.reg1 = s->id;
@@ -717,14 +717,14 @@ static uint8_t _cpu_step(cpu_state s) {
 }
 
 uint8_t cpu_step(cpu_state s) {
-	if (s->_needs_reset) {
+	if (s->needs_reset) {
 		return ERR_HALT;
 	}
 
 	uint8_t res = _cpu_step(s);
 	if (!res) {
-		if (s->r.flagr & FLAG_TRAP) {
-			s->r.flagr &= ~FLAG_TRAP;
+		if (s->reg.flagr & FLAG_TRAP) {
+			s->reg.flagr &= ~FLAG_TRAP;
 			uint8_t ires = interrupt(s, INT_TRAP);
 			if (ires) {
 				return ires;
@@ -738,7 +738,7 @@ uint8_t cpu_step(cpu_state s) {
 		return 0;
 	}
 
-	s->_needs_reset = 1;
+	s->needs_reset = 1;
 	return res;
 }
 

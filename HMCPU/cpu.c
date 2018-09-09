@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include "cpu.h"
 #include "registers.h"
 #include "memory.h"
@@ -9,8 +10,6 @@
 
 #define REG_FLAG_OFFSET 0b10000
 
-uint8_t cpu_needs_reset = 1;
-uint64_t cpu_instruction_counter = 0;
 
 static void memclear(void *ptr, size_t num) {
 	uint8_t *ptrb = (uint8_t *)ptr;
@@ -19,118 +18,147 @@ static void memclear(void *ptr, size_t num) {
 	}
 }
 
-void cpu_reset() {
-	memclear(&r, sizeof(r));
+void cpu_reset(cpu_state s) {
+	memclear(&s->r, sizeof(s->r));
 	int i;
-	uint32_t bootloader_baseaddr = *(uint32_t*)(BOOTLOADER + sizeof(BOOTLOADER) - 4);
-	for (i = 0; i < sizeof(BOOTLOADER) - 4; i++) {
-		m[i + bootloader_baseaddr] = BOOTLOADER[i];
+	int32_t bootloader_baseaddr = *(int32_t*)(BOOTLOADER + sizeof(BOOTLOADER) - 4);
+	if (bootloader_baseaddr < 0) {
+		bootloader_baseaddr = s->ram_size + bootloader_baseaddr;
+		bootloader_baseaddr -= bootloader_baseaddr % 8;
 	}
-	r.pc = bootloader_baseaddr;
-	cpu_needs_reset = 0;
-	cpu_instruction_counter = 0;
+	for (i = 0; i < sizeof(BOOTLOADER) - 4; i++) {
+		s->m[i + bootloader_baseaddr] = BOOTLOADER[i];
+	}
+	s->r.pc = bootloader_baseaddr;
+	s->_needs_reset = 0;
+	s->instruction_counter = 0;
 }
 
-static void devzero_write(struct iostream_t* io, uint8_t i) { }
-static uint8_t devzero_read(struct iostream_t* io) { return 0; }
+static void devzero_write(uint32_t id, iostream_t* io, uint8_t i) { }
+static uint8_t devzero_read(uint32_t id, iostream_t* io) { return 0; }
 
 uint8_t dummyrom[1] = { 0x00 };
 
-static uint8_t dummyrom_read(struct iostream_t* io) {
+static uint8_t dummyrom_read(uint32_t id, iostream_t* io) {
 	return dummyrom[io->rptr];
 }
 
-void cpu_init() {
-	//memclear(m, RAM_SIZE);
-	memclear(cpu_interrupts, sizeof(cpu_interrupts));
-
-	// stdout
-	io[IO_STDOUT].rptr = 0;
-	io[IO_STDOUT].wptr = 0;
-	io[IO_STDOUT].length = 0;
-	io[IO_STDOUT].read = 0;
-	io[IO_STDOUT].write = devzero_write;
-	io[IO_STDOUT].flags = 0;
-
-	// ROM
-	io[IO_ROM].rptr = 0;
-	io[IO_ROM].wptr = 0;
-	io[IO_ROM].length = sizeof(dummyrom);
-	io[IO_ROM].read = dummyrom_read;
-	io[IO_ROM].write = 0;
-	io[IO_ROM].flags = IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
-
-	// stdin
-	io[IO_STDIN].rptr = 0;
-	io[IO_STDIN].wptr = 0;
-	io[IO_STDIN].length = 0;
-	io[IO_STDIN].read = devzero_read;
-	io[IO_STDIN].write = 0;
-	io[IO_STDIN].flags = 0;
-
-	// /dev/zero
-	io[3].rptr = 0;
-	io[3].wptr = 0;
-	io[3].length = 0;
-	io[3].read = devzero_read;
-	io[3].write = devzero_write;
-	io[3].flags = IO_FLAG_WPTR_GET|IO_FLAG_WPTR_SET|IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
-
-	cpu_reset();
+void cpu_set_io(cpu_state s, int id, iostream_t iostr) {
+	iostream_t* subio = malloc(sizeof(iostream_t));
+	memcpy(subio, &iostr, sizeof(iostream_t));
+	s->io[id] = subio;
 }
 
-static inline uint8_t iread8() {
-	uint32_t opc = r.pc++;
-	if (opc >= RAM_SIZE) {
-		r.pc = 1;
+cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
+	cpu_state s = malloc(sizeof(cpu_state_t));
+
+	if (iocount < 4) {
+		iocount = 4;
+	}
+	s->iocount = iocount;
+	s->io = malloc(sizeof(iostream_t*) * iocount);
+	s->id = cpuid;
+
+	s->ram_size = ram_size;
+	s->m = malloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
+
+	//memclear(m, RAM_SIZE);
+	memclear(s->interrupts, sizeof(s->interrupts));
+
+	iostream_t mkio;
+	// stdout
+	mkio.rptr = 0;
+	mkio.wptr = 0;
+	mkio.length = 0;
+	mkio.read = 0;
+	mkio.write = devzero_write;
+	mkio.flags = 0;
+	cpu_set_io(s, IO_STDOUT, mkio);
+
+	// ROM
+	mkio.rptr = 0;
+	mkio.wptr = 0;
+	mkio.length = sizeof(dummyrom);
+	mkio.read = dummyrom_read;
+	mkio.write = 0;
+	mkio.flags = IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
+	cpu_set_io(s, IO_ROM, mkio);
+
+	// stdin
+	mkio.rptr = 0;
+	mkio.wptr = 0;
+	mkio.length = 0;
+	mkio.read = devzero_read;
+	mkio.write = 0;
+	mkio.flags = 0;
+	cpu_set_io(s, IO_STDIN, mkio);
+
+	// /dev/zero
+	mkio.rptr = 0;
+	mkio.wptr = 0;
+	mkio.length = 0;
+	mkio.read = devzero_read;
+	mkio.write = devzero_write;
+	mkio.flags = IO_FLAG_WPTR_GET|IO_FLAG_WPTR_SET|IO_FLAG_RPTR_GET|IO_FLAG_RPTR_SET|IO_FLAG_LENGTH|IO_FLAG_RESET;
+	cpu_set_io(s, IO_ZERO, mkio);
+
+	cpu_reset(s);
+
+	return s;
+}
+
+static inline uint8_t iread8(cpu_state s) {
+	uint32_t opc = s->r.pc++;
+	if (opc >= s->ram_size) {
+		s->r.pc = 1;
 		opc = 0;
 	}
-	uint8_t raw = m[opc];
-	if (r.flagr & FLAG_ENCON) {
-		return raw ^ (uint8_t)((r.encreg12 >> ((opc % 8) << 3)) & 0xFF);
+	uint8_t raw = s->m[opc];
+	if (s->r.flagr & FLAG_ENCON) {
+		return raw ^ (uint8_t)((s->r.encreg12 >> ((opc % 8) << 3)) & 0xFF);
 	}
 	return raw;
 }
 
-static inline int8_t siread8() {
-	uint8_t u8 = iread8();
+static inline int8_t siread8(cpu_state s) {
+	uint8_t u8 = iread8(s);
 	return *(int8_t*)&u8;
 }
 
-static inline int8_t siread8_no0() {
-	int8_t i8 = siread8();
+static inline int8_t siread8_no0(cpu_state s) {
+	int8_t i8 = siread8(s);
 	if (i8 >= 0) {
 		return i8 + 1;
 	}
 	return i8;
 }
 
-#define __iread8_64() ((uint64_t)iread8())
-#define __iread8_32() ((uint32_t)iread8())
+#define __iread8_64(s) ((uint64_t)iread8(s))
+#define __iread8_32(s) ((uint32_t)iread8(s))
 
-static inline uint32_t constrain_ram(uint32_t val) {
-	return (val % RAM_SIZE);
+static inline uint32_t constrain_ram(cpu_state s, uint32_t val) {
+	return (val % s->ram_size);
 }
 
-static inline uint32_t iread32() {
-	return __iread8_32() + (__iread8_32() << 8) + (__iread8_32() << 16) + (__iread8_32() << 24);
+static inline uint32_t iread32(cpu_state s) {
+	return __iread8_32(s) + (__iread8_32(s) << 8) + (__iread8_32(s) << 16) + (__iread8_32(s) << 24);
 }
 
-static inline uint64_t iread64() {
-	return __iread8_64() + (__iread8_64() << 8) + (__iread8_64() << 16) + (__iread8_64() << 24) + (__iread8_64() << 32) + (__iread8_64() << 40) + (__iread8_64() << 48) + (__iread8_64() << 56);
+static inline uint64_t iread64(cpu_state s) {
+	return __iread8_64(s) + (__iread8_64(s) << 8) + (__iread8_64(s) << 16) + (__iread8_64(s) << 24) + (__iread8_64(s) << 32) + (__iread8_64(s) << 40) + (__iread8_64(s) << 48) + (__iread8_64(s) << 56);
 }
 
-#define ireadrv(nbits, idx) res.reg##idx = (uint##nbits##_t*)(r.u + r##idx); \
+#define ireadrv(s, nbits, idx) res.reg##idx = (uint##nbits##_t*)(s->r.u + r##idx); \
 	if (r##idx == CREG_ID) { \
-		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(r.pc)); \
-		res.reg##idx##val = iread##nbits(); \
+		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, s->r.pc)); \
+		res.reg##idx##val = iread##nbits(s); \
 	} else if (r##idx == MREG_ID) { \
-		uint8_t regid = iread8(); \
-		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0() : 0; \
-		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(r.u[regid & 0x0F] + offset)); \
+		uint8_t regid = iread8(s); \
+		int8_t offset = (regid & REG_FLAG_OFFSET) ? siread8_no0(s) : 0; \
+		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, s->r.u[regid & 0x0F] + offset)); \
 		res.reg##idx##val = *res.reg##idx; \
 	} else if (r##idx == MREGC_ID) { \
-		res.reg##idx = (uint##nbits##_t*)(m + constrain_ram(iread32())); \
+		res.reg##idx = (uint##nbits##_t*)(s->m + constrain_ram(s, iread32(s))); \
 		res.reg##idx##val = *(uint##nbits##_t*)res.reg##idx; \
 	} else if (r##idx >= REGISTERS_SIZE) { \
 		res.reg##idx = NULL; \
@@ -157,64 +185,64 @@ typedef struct regregvalval##nbits##_t { \
 	rrvvNN(nbits, ftype, 2) \
 } regregvalval##nbits##_t; \
 \
-static inline regregvalval##nbits##_t ireadrrvv##nbits() { \
-	uint8_t regs = iread8(); \
+static inline regregvalval##nbits##_t ireadrrvv##nbits(cpu_state s) { \
+	uint8_t regs = iread8(s); \
 	uint8_t r1 = (regs >> 4) & 0x0F; \
 	uint8_t r2 = regs & 0x0F; \
 	regregvalval##nbits##_t res; \
-	ireadrv(nbits, 1); \
-	ireadrv(nbits, 2); \
+	ireadrv(s, nbits, 1); \
+	ireadrv(s, nbits, 2); \
 	return res; \
 }
 
 ireadrrvvN(32, float)
 ireadrrvvN(64, double)
 
-static void push(uint32_t i) {
-	r.csp -= 4;
-	uint32_t* m32 = (uint32_t*)(m + constrain_ram(r.csp));
+static void push(cpu_state s, uint32_t i) {
+	s->r.csp -= 4;
+	uint32_t* m32 = (uint32_t*)(s->m + constrain_ram(s, s->r.csp));
 	*m32 = i;
 }
 
-static void push64(uint64_t i) {
-	r.csp -= 8;
-	uint64_t* m64 = (uint64_t*)(m + constrain_ram(r.csp));
+static void push64(cpu_state s, uint64_t i) {
+	s->r.csp -= 8;
+	uint64_t* m64 = (uint64_t*)(s->m + constrain_ram(s, s->r.csp));
 	*m64 = i;
 }
 
-static uint32_t pop() {
-	uint32_t res = *(uint32_t*)(m + constrain_ram(r.csp));
-	r.csp += 4;
+static uint32_t pop(cpu_state s) {
+	uint32_t res = *(uint32_t*)(s->m + constrain_ram(s, s->r.csp));
+	s->r.csp += 4;
 	return res;
 }
 
-static uint64_t pop64() {
-	uint64_t res = *(uint64_t*)(m + constrain_ram(r.csp));
-	r.csp += 8;
+static uint64_t pop64(cpu_state s) {
+	uint64_t res = *(uint64_t*)(s->m + constrain_ram(s, s->r.csp));
+	s->r.csp += 8;
 	return res;
 }
 
-#define DOCMP(a, b) r.flagr = (r.flagr & FLAG_NOCMP) | \
-							  ((a < b) << 1) | \
-							  (a == b);
+#define DOCMP(a, b) s->r.flagr = (s->r.flagr & FLAG_NOCMP) | \
+						  	    ((a < b) << 1) | \
+							    (a == b);
 
-#define IFEQ()  if   (r.flagr & FLAG_EQ)
-#define IFNEQ() if (!(r.flagr & FLAG_EQ))
+#define IFEQ()  if   (s->r.flagr & FLAG_EQ)
+#define IFNEQ() if (!(s->r.flagr & FLAG_EQ))
 
-#define IFLT()  if   (r.flagr & FLAG_LT)
-#define IFGTE() if (!(r.flagr & FLAG_LT))
+#define IFLT()  if   (s->r.flagr & FLAG_LT)
+#define IFGTE() if (!(s->r.flagr & FLAG_LT))
 
-#define IFLTE() if   (r.flagr & (FLAG_LT|FLAG_EQ))
-#define IFGT()  if (!(r.flagr & (FLAG_LT|FLAG_EQ)))
+#define IFLTE() if   (s->r.flagr & (FLAG_LT|FLAG_EQ))
+#define IFGT()  if (!(s->r.flagr & (FLAG_LT|FLAG_EQ)))
 
 #define PUSHCALLSTACK() { \
-	push(r.pc); \
-	push(r.bsp); \
-	r.bsp = r.csp; \
+	push(s, s->r.pc); \
+	push(s, s->r.bsp); \
+	s->r.bsp = s->r.csp; \
 }
 #define DOJMP()	   DOJMPP(1);
 #define DOJMPZ()   DOJMPP(2);
-#define DOJMPP(a)  { r.pc = rrvv32.reg ## a ## val; }
+#define DOJMPP(a)  { s->r.pc = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
 #define DOCALLP(a) { \
@@ -223,98 +251,101 @@ static uint64_t pop64() {
 }
 
 #define DORETN() { \
-	r.csp = r.bsp; \
-	r.bsp = pop(); \
-	r.pc = pop(); \
+	s->r.csp = s->r.bsp; \
+	s->r.bsp = pop(s); \
+	s->r.pc = pop(s); \
 }
 
 #define IFZ()  if (rrvv32.reg1val == 0)
 #define IFNZ() if (rrvv32.reg1val != 0)
 
-static uint8_t cpu_interrupt(uint8_t i) {
+static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
 	if (i > 7) {
-		cpu_interrupt_handler custom = cpu_interrupts[i];
+		cpu_interrupt_handler custom = s->interrupts[i];
 		if (custom) {
 			return custom(i);
 		}
 		return ERR_UNHANDLED_INTERRUPT;
 	}
 
-	uint32_t ioid = pop();
-	if (ioid >= IOSTREAM_COUNT) {
+	uint32_t ioid = pop(s);
+	if (ioid >= s->iocount) {
 		return ERR_INVALID_IO;
 	}
-	iostream_t iostr = io[ioid];
+	iostream_t* iostr = s->io[ioid];
+	if (iostr == NULL) {
+		return ERR_INVALID_IO;
+	}
 	uint32_t offset, len, x;
 
 	switch (i) {
 	case INT_IO_WRITE:
-		offset = pop();
-		len = pop();
-		if (!iostr.write) {
+		offset = pop(s);
+		len = pop(s);
+		if (!iostr->write) {
 			return ERR_INVALID_IO;
 		}
 		for (x = 0; x < len; x++) {
-			if (x + offset >= RAM_SIZE) {
+			if (x + offset >= s->ram_size) {
 				return ERR_INVALID_IO;
 			}
-			iostr.write(&iostr, m[x + offset]);
-			iostr.wptr++;
+			iostr->write(s->id, iostr, s->m[x + offset]);
+			iostr->wptr++;
 		}
 		break;
 	case INT_IO_READ:
-		offset = pop();
-		len = pop();
-		if (!iostr.read) {
+		offset = pop(s);
+		len = pop(s);
+		if (!iostr->read) {
 			return ERR_INVALID_IO;
 		}
 		for (x = 0; x < len; x++) {
-			if (x + offset >= RAM_SIZE) {
+			if (x + offset >= s->ram_size) {
 				return ERR_INVALID_IO;
 			}
-			m[x + offset] = iostr.read(&iostr);
-			iostr.rptr++;
+			s->m[x + offset] = iostr->read(s->id, iostr);
+			iostr->rptr++;
 		}
 		break;
 	case INT_IO_WPTR_SET:
-		if (iostr.flags | IO_FLAG_WPTR_SET) {
-			iostr.wptr = pop();
+		if (iostr->flags | IO_FLAG_WPTR_SET) {
+			iostr->wptr = pop(s);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RPTR_SET:
-		if (iostr.flags | IO_FLAG_RPTR_SET) {
-			iostr.rptr = pop();
+		if (iostr->flags | IO_FLAG_RPTR_SET) {
+			iostr->rptr = pop(s);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_WPTR_GET:
-		if (iostr.flags | IO_FLAG_WPTR_GET) {
-			push(iostr.wptr);
+		if (iostr->flags | IO_FLAG_WPTR_GET) {
+			push(s, iostr->wptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RPTR_GET:
-		if (iostr.flags | IO_FLAG_RPTR_GET) {
-			push(iostr.rptr);
+		if (iostr->flags | IO_FLAG_RPTR_GET) {
+			push(s, iostr->rptr);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_LENGTH_GET:
-		if (iostr.flags | IO_FLAG_LENGTH) {
-			push(iostr.length);
+		if (iostr->flags | IO_FLAG_LENGTH) {
+			push(s, iostr->length);
 		} else {
 			return ERR_INVALID_IO;
 		}
 		break;
 	case INT_IO_RESET:
-		if (iostr.flags | IO_FLAG_RESET) {
-			iostr.wptr = 0;
-			iostr.rptr = 0;
+		if (iostr->flags | IO_FLAG_RESET) {
+			iostr->wptr = 0;
+			iostr->rptr = 0;
 		} else {
 			return ERR_INVALID_IO;
 		}
@@ -323,42 +354,44 @@ static uint8_t cpu_interrupt(uint8_t i) {
 	return 0;
 }
 
-static uint8_t interrupt_nopush(uint8_t i) {
-	if (r.ihbase == 0) {
-		return cpu_interrupt(i);
+static uint8_t interrupt_nopush(cpu_state s, uint8_t i) {
+	if (s->r.ihbase == 0) {
+		return cpu_interrupt(s, i);
 	}
-	uint32_t newpc = *(uint32_t*)(m + constrain_ram((i << 1) + r.ihbase));
+	uint32_t newpc = *(uint32_t*)(s->m + constrain_ram(s, (i << 1) + s->r.ihbase));
 	if (newpc == 0) {
-		return cpu_interrupt(i);
+		return cpu_interrupt(s, i);
 	}
 	PUSHCALLSTACK();
-	r.pc = newpc;
+	s->r.pc = newpc;
 	return 0;
 }
 
-static uint8_t interrupt(uint8_t i) {
-	uint8_t res = interrupt_nopush(i);
+static uint8_t interrupt(cpu_state s, uint8_t i) {
+	uint8_t res = interrupt_nopush(s, i);
 	if (res == ERR_UNHANDLED_INTERRUPT) {
-		push(i);
+		push(s, i);
 	}
 	return res;
 }
 
-uint8_t cpu_run() {
+uint8_t cpu_run(cpu_state s) {
 	while(1) {
-		uint8_t res = cpu_step();
+		uint8_t res = cpu_step(s);
 		if (res) {
 			return res;
 		}
 	}
 }
 
-static uint8_t _cpu_step() {
-	cpu_instruction_counter++;
-	uint8_t op = iread8();
+static uint8_t _cpu_step(cpu_state s) {
+	s->instruction_counter++;
+	uint8_t op = iread8(s);
 	if (op >= I_FIRST_INVALID) {
-		return interrupt(INT_ILLEGAL_OPCODE);
+		return interrupt(s, INT_ILLEGAL_OPCODE);
 	}
+
+	//printf("OP = %d\n", op);
 
 	uint8_t tmp8;
 
@@ -367,13 +400,13 @@ static uint8_t _cpu_step() {
 
 	switch (ITYPES[op]) {
 	case IT_RRVV:
-		rrvv32 = ireadrrvv32();
+		rrvv32 = ireadrrvv32(s);
 		if (rrvv32.reg1 == NULL || rrvv32.reg2 == NULL) {
 			return ERR_INVALID_REGISTER;
 		}
 		break;
 	case IT_RRVV64:
-		rrvv64 = ireadrrvv64();
+		rrvv64 = ireadrrvv64(s);
 		if (rrvv64.reg1 == NULL || rrvv64.reg2 == NULL) {
 			return ERR_INVALID_REGISTER;
 		}
@@ -390,16 +423,16 @@ static uint8_t _cpu_step() {
 		*rrvv64.reg1 = rrvv64.reg2val;
 		break;
 	case I_PUSH:
-		push(rrvv32.reg1val);
+		push(s, rrvv32.reg1val);
 		break;
 	case I_POP:
-		*rrvv32.reg1 = pop();
+		*rrvv32.reg1 = pop(s);
 		break;
 	case I_PUSH64:
-		push64(rrvv32.reg1val);
+		push64(s, rrvv32.reg1val);
 		break;
 	case I_POP64:
-		*rrvv64.reg1 = pop64();
+		*rrvv64.reg1 = pop64(s);
 		break;
 	case I_NOP:
 		// NOP
@@ -533,33 +566,33 @@ static uint8_t _cpu_step() {
 		break;
 		// Special
 	case I_INT:
-		return interrupt(rrvv32.reg1val);
+		return interrupt(s, rrvv32.reg1val);
 	case I_SETIH:
-		*(uint16_t*)(m + constrain_ram(((rrvv32.reg1val & 0xFF) << 1) + r.ihbase)) = rrvv32.reg2val;
+		*(uint16_t*)(s->m + constrain_ram(s, ((rrvv32.reg1val & 0xFF) << 1) + s->r.ihbase)) = rrvv32.reg2val;
 		break;
 	case I_HALT:
 		return ERR_HALT;
 	case I_RESET:
-		cpu_reset();
+		cpu_reset(s);
 		break;
 	case I_TRAP:
-		r.flagr |= FLAG_TRAP;
+		s->r.flagr |= FLAG_TRAP;
 		break;
 	case I_ENCOFF:
-		r.flagr &= ~FLAG_ENCON;
+		s->r.flagr &= ~FLAG_ENCON;
 		break;
 	case I_ENCON:
-		r.flagr |= FLAG_ENCON;
+		s->r.flagr |= FLAG_ENCON;
 		break;
 	case I_PUSHREG:
-		push64(r.r12);
-		push64(r.r34);
-		push64(r.r56);
+		push64(s, s->r.r12);
+		push64(s, s->r.r34);
+		push64(s, s->r.r56);
 		break;
 	case I_POPREG:
-		pop64(r.r56);
-		pop64(r.r34);
-		pop64(r.r12);
+		s->r.r56 = pop64(s);
+		s->r.r34 = pop64(s);
+		s->r.r12 = pop64(s);
 		break;
 		// 64-bit Integer Arithmetic
 	case I_ADD64:
@@ -630,36 +663,42 @@ static uint8_t _cpu_step() {
 		break;
 	case I_RETNA:
 		DORETN();
-		r.csp += rrvv32.reg1val;
+		s->r.csp += rrvv32.reg1val;
 		break;
 	case I_POPNIL:
-		r.csp += 4;
+		s->r.csp += 4;
 		break;
 	case I_POPNIL64:
-		r.csp += 8;
+		s->r.csp += 8;
 		break;
 	case I_RETNAC:
-		tmp8 = iread8();
+		tmp8 = iread8(s);
 		DORETN();
-		r.csp += tmp8;
+		s->r.csp += tmp8;
+		break;
+	case I_CPUID:
+		*rrvv32.reg1 = s->id;
+		break;
+	case I_RAMSIZE:
+		*rrvv32.reg1 = s->ram_size;
 		break;
 	default:
-		return interrupt(INT_ILLEGAL_OPCODE);
+		return interrupt(s, INT_ILLEGAL_OPCODE);
 	}
 
 	return 0;
 }
 
-uint8_t cpu_step() {
-	if (cpu_needs_reset) {
+uint8_t cpu_step(cpu_state s) {
+	if (s->_needs_reset) {
 		return ERR_HALT;
 	}
 
-	uint8_t res = _cpu_step();
+	uint8_t res = _cpu_step(s);
 	if (!res) {
-		if (r.flagr & FLAG_TRAP) {
-			r.flagr &= ~FLAG_TRAP;
-			uint8_t ires = interrupt(INT_TRAP);
+		if (s->r.flagr & FLAG_TRAP) {
+			s->r.flagr &= ~FLAG_TRAP;
+			uint8_t ires = interrupt(s, INT_TRAP);
 			if (ires) {
 				return ires;
 			}
@@ -667,12 +706,12 @@ uint8_t cpu_step() {
 		return 0;
 	}
 
-	if (res != ERR_HALT && !interrupt_nopush(INT_ERR)) {
-		push(res);
+	if (res != ERR_HALT && !interrupt_nopush(s, INT_ERR)) {
+		push(s, res);
 		return 0;
 	}
 
-	cpu_needs_reset = 1;
+	s->_needs_reset = 1;
 	return res;
 }
 

@@ -109,6 +109,8 @@ OPCODES = {
 	"POPNIL": OpCode(79, IT_N, "POPNIL"),
 	"POPNIL64": OpCode(80, IT_N, "POPNIL64"),
 	"RETNAC": OpCode(81, IT_U8, "RETNAC"),
+	"CPUID": OpCode(82, IT_RRVV, "CPUID"),
+	"RAMSIZE": OpCode(83, IT_RRVV, "RAMSIZE"),
 	# Virtual
 	"REM": OpCode(-1, IT_VIRTUAL, "REM"),
 	"DB": OpCode(-1, IT_VIRTUAL, "DB"),

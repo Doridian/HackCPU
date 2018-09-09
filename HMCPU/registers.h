@@ -97,6 +97,4 @@ typedef union registers_t {
 } registers_t;
 #pragma pack(pop)
 
-registers_t r;
-
 #endif // REGISTERS_H_INCLUDED

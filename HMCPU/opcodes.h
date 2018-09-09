@@ -95,6 +95,8 @@ enum INSTRUCTION {
 	I_POPNIL,
 	I_POPNIL64,
 	I_RETNAC,
+	I_CPUID,
+	I_RAMSIZE,
 	I_FIRST_INVALID
 };
 
@@ -202,6 +204,8 @@ static uint8_t ITYPES[] = {
 	IT_N,
 	IT_N,
 	IT_U8,
+	IT_RRVV,
+	IT_RRVV,
 };
 
 #endif // OPCODES_H_INCLUDED

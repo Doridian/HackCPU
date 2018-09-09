@@ -19,16 +19,36 @@
 #define INT_ERR 129
 #define INT_ILLEGAL_OPCODE 128
 
-#include <stdint.h>
+// 4MB RAM
+#define RAM_SIZE_DEFAULT (1024 * 1024 * 4)
 
-uint64_t cpu_instruction_counter;
+#include <stdint.h>
+#include "io.h"
+#include "registers.h"
 
 typedef uint8_t(*cpu_interrupt_handler)(uint8_t interrupt);
-cpu_interrupt_handler cpu_interrupts[256];
 
-void cpu_init();
-void cpu_reset();
-uint8_t cpu_run();
-uint8_t cpu_step();
+typedef struct cpu_state_t {
+	registers_t r;
+	uint8_t* m;
+	cpu_interrupt_handler interrupts[256];
+
+	iostream_t** io;
+	uint32_t iocount;
+
+	uint32_t id;
+	uint64_t instruction_counter;
+
+	uint32_t ram_size;
+	uint8_t _needs_reset;
+} cpu_state_t;
+
+typedef cpu_state_t* cpu_state;
+
+cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size);
+void cpu_set_io(cpu_state s, int id, iostream_t iostr);
+void cpu_reset(cpu_state s);
+uint8_t cpu_run(cpu_state s);
+uint8_t cpu_step(cpu_state s);
 
 #endif // CPU_H_INCLUDED

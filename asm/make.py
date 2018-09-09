@@ -43,8 +43,6 @@ bpos = 0
 labels = {}
 instructions = []
 
-labels["RAM_SIZE"] = RAM_SIZE
-
 in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
@@ -320,11 +318,8 @@ def parse():
 					int_enckkey = int(lsplit[0], 0)
 
 				bootloader_offset = int(lsplit[1], 0)
-				if bootloader_offset < 0:
-					baseaddr = RAM_SIZE + bootloader_offset
-				else:
-					baseaddr = bootloader_offset
-				suffix = baseaddr.to_bytes(4, BYTEORDER)
+				baseaddr = 0
+				suffix = bootloader_offset.to_bytes(4, BYTEORDER, signed=True)
 				if doenc:
 					instructions.append(Instruction(OPCODES["NOP"]))
 					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))

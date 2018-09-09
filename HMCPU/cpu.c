@@ -51,7 +51,12 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 	s->id = cpuid;
 
 	s->ram_size = ram_size;
-	s->m = mem_alloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
+	if (ram_size > 0) {
+		s->m = mem_alloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
+	}
+	else {
+		s->m = NULL;
+	}
 
 	//mem_clear(m, RAM_SIZE);
 	mem_clear(s->interrupts, sizeof(s->interrupts));

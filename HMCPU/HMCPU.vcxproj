@@ -26,6 +26,7 @@
     <ClInclude Include="bootloader.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="io.h" />
+    <ClInclude Include="memory.h" />
     <ClInclude Include="opcodes.h" />
     <ClInclude Include="registers.h" />
   </ItemGroup>

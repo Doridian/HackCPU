@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <stdlib.h>
 #include "cpu.h"
 #include "registers.h"
 #include "memory.h"
@@ -10,16 +9,8 @@
 
 #define REG_FLAG_OFFSET 0b10000
 
-
-static void memclear(void *ptr, size_t num) {
-	uint8_t *ptrb = (uint8_t *)ptr;
-	while (num--) {
-		*ptrb++ = 0;
-	}
-}
-
 void cpu_reset(cpu_state s) {
-	memclear(&s->r, sizeof(s->r));
+	mem_clear(&s->r, sizeof(s->r));
 	int i;
 	int32_t bootloader_baseaddr = *(int32_t*)(BOOTLOADER + sizeof(BOOTLOADER) - 4);
 	if (bootloader_baseaddr < 0) {
@@ -44,26 +35,26 @@ static uint8_t dummyrom_read(uint32_t id, iostream_t* io) {
 }
 
 void cpu_set_io(cpu_state s, int id, iostream_t iostr) {
-	iostream_t* subio = malloc(sizeof(iostream_t));
-	memcpy(subio, &iostr, sizeof(iostream_t));
+	iostream_t* subio = mem_alloc(sizeof(iostream_t));
+	mem_copy(subio, &iostr, sizeof(iostream_t));
 	s->io[id] = subio;
 }
 
 cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
-	cpu_state s = malloc(sizeof(cpu_state_t));
+	cpu_state s = mem_alloc(sizeof(cpu_state_t));
 
 	if (iocount < 4) {
 		iocount = 4;
 	}
 	s->iocount = iocount;
-	s->io = malloc(sizeof(iostream_t*) * iocount);
+	s->io = mem_alloc(sizeof(iostream_t*) * iocount);
 	s->id = cpuid;
 
 	s->ram_size = ram_size;
-	s->m = malloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
+	s->m = mem_alloc(ram_size + 16); // Make sure accidental 64-bit writes don't corrupt memory
 
-	//memclear(m, RAM_SIZE);
-	memclear(s->interrupts, sizeof(s->interrupts));
+	//mem_clear(m, RAM_SIZE);
+	mem_clear(s->interrupts, sizeof(s->interrupts));
 
 	iostream_t mkio;
 	// stdout
@@ -105,6 +96,27 @@ cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size) {
 	cpu_reset(s);
 
 	return s;
+}
+
+void cpu_free(cpu_state s) {
+	if (s->m != NULL) {
+		mem_free(s->m);
+		s->m = NULL;
+	}
+
+	if (s->io != NULL) {
+		for (uint32_t i = 0; i < s->iocount; i++) {
+			iostream_t* io = s->io[i];
+			if (io != NULL) {
+				mem_free(io);
+			}
+		}
+
+		mem_free(s->io);
+		s->io = NULL;
+	}
+
+	mem_free(s);
 }
 
 static inline uint8_t iread8(cpu_state s) {

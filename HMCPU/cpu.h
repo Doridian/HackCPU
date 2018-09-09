@@ -46,6 +46,8 @@ typedef struct cpu_state_t {
 typedef cpu_state_t* cpu_state;
 
 cpu_state cpu_init(uint32_t iocount, uint32_t cpuid, uint32_t ram_size);
+void cpu_free(cpu_state s);
+
 void cpu_set_io(cpu_state s, int id, iostream_t iostr);
 void cpu_reset(cpu_state s);
 uint8_t cpu_run(cpu_state s);

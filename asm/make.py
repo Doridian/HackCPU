@@ -317,7 +317,10 @@ def parse():
 					int_enckkey = int(lsplit[0], 0)
 
 				bootloader_offset = int(lsplit[1], 0)
-				baseaddr = 0
+				if bootloader_offset > 0:
+					baseaddr = bootloader_offset
+				else:
+					baseaddr = 0
 				suffix = bootloader_offset.to_bytes(4, BYTEORDER, signed=True)
 				if doenc:
 					instructions.append(Instruction(OPCODES["NOP"]))

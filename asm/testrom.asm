@@ -1,4 +1,8 @@
 #ROM 0x123456789abcdef0
+
+RAMSIZE R6
+SUB R6, 2048
+
 MOV IHBASE, 0
 # RAM TEST 8-bit
 MOV R3, :ENDADDR
@@ -13,7 +17,7 @@ CALL :ram_check
 CMP R1, 1
 JNE :test_fail
 ADD R3, 4
-CMP R3, :RAM_SIZE - 2048
+CMP R3, R6
 JL :8bittest_next
 PUSH :db_ramok_len
 PUSH :db_ramok

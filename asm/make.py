@@ -327,6 +327,9 @@ def parse():
 					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
 					instructions.append(Instruction(OPCODES["ENCON"]))
 					instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 16]"), Parameter("[PC - 18]")]))
+					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 18]"), Parameter("[PC - 20]")]))
+					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 20]"), Parameter("[PC - 22]")]))
 			elif opcodeName == "#ALIGN":
 				instructions.append(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
 		else:

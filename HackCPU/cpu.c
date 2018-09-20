@@ -411,8 +411,8 @@ uint8_t cpu_run(cpu_state s) {
 
 #define OPTYPE_RRVV   (0b00000000)
 #define OPTYPE_RRVV64 (0b01000000)
-#define OPTYPE_N      (0b10000000)
-#define OPTYPE_Other  (0b11000000)
+#define OPTYPE_Other  (0b10000000)
+#define OPTYPE_Other2 (0b11000000)
 
 static uint8_t _cpu_step(cpu_state s) {
 	s->instruction_counter++;

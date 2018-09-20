@@ -60,7 +60,8 @@ while True:
 
 	if opid != int(cv(row, 'OP'), 10):
 		opcodes_changed = True
-	row[colIndices['OP']] = ' %03d ' % opid
+	row[colIndices['OP']] = ' %3d ' % opid
+	row[colIndices['0xOP']] = ' %4X ' % opid
 
 	while opid >= len(all_opcodes):
 		all_opcodes.append(None)

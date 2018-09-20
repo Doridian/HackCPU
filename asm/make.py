@@ -342,10 +342,15 @@ def parse():
 					useopc = "RETN"
 				elif len(lsplit) == 1:
 					try :
-						lsplit[0] = "%d" % (int(lsplit[0], 10) * 4)
+						useopc = "RETNA"
+						x = int(lsplit[0], 10) * 4
+						if x == 0:
+							useopc = "RETN"
+							lsplit = []
+						else:
+							lsplit[0] = "%d" % x
 					except:
 						pass
-					useopc = "RETNA"
 				else:
 					raise ValueError("DRET only supports 0 or 1 parameter")
 				insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))

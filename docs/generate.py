@@ -1,19 +1,19 @@
-from xlrd import open_workbook
+file = open('Opcodes.md')
 
-wb = open_workbook('CPU.xlsx')
-sheet = wb.sheet_by_name('Opcodes')
+def parseMDTableLine(line):
+	split = line.split('|')
+	return list(map(str.strip, split))
 
-number_of_rows = sheet.nrows
-number_of_columns = sheet.ncols
+columns = parseMDTableLine(file.readline())
 
 colIndices = {}
 
 def cv(row, col):
 	global colIndices
-	return sheet.cell(row, colIndices[col]).value
+	return row[colIndices[col]]
 
-for col in range(0, number_of_columns):
-	colIndices[sheet.cell(0, col).value] = col
+for col in range(0, len(columns)):
+	colIndices[columns[col]] = col
 
 instructions_py = []
 instructions = []
@@ -22,7 +22,25 @@ itypes = []
 INDENT = '	'
 
 lastopid = -1
-for row in range(1, number_of_rows):
+while True:
+	row = file.readline()
+	if not row:
+		break
+
+	row = parseMDTableLine(row)
+	insn_name = cv(row, 'Name')
+	if not insn_name or insn_name == 'Name':
+		continue
+
+	is_dashonly = True
+	for c in insn_name:
+		if c != '-':
+			is_dashonly = False
+			break
+
+	if is_dashonly:
+		continue
+
 	category = cv(row, 'Category')
 	if category:
 		categoryx = '%s# %s' % (INDENT, category)
@@ -32,17 +50,16 @@ for row in range(1, number_of_rows):
 		itypes.append(categoryx)
 
 	opid = int(cv(row, 'OP'))
-	instructions_py.append('%s"%s": OpCode(%d, IT_%s, "%s"),' % (INDENT, cv(row, 'Name'), opid, cv(row, 'Type'), cv(row, 'Name')))
+	instructions_py.append('%s"%s": OpCode(%d, IT_%s, "%s"),' % (INDENT, insn_name, opid, cv(row, 'Type'), insn_name))
 	lastopid += 1
 	if opid == 0 or lastopid < opid:
-		instructions.append('%sI_%s = %s,' % (INDENT, cv(row, 'Name'), opid))
+		instructions.append('%sI_%s = %s,' % (INDENT, insn_name, opid))
 	else:
-		instructions.append('%sI_%s,' % (INDENT, cv(row, 'Name')))
+		instructions.append('%sI_%s,' % (INDENT, insn_name))
 	while lastopid < opid:
 		itypes.append('%sIT_INVALID,' % INDENT)
 		lastopid += 1
 	itypes.append('%sIT_%s,' % (INDENT, cv(row, 'Type')))
-
 
 
 f = open("../asm/opcodes.py", "w")

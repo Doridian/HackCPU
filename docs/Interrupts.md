@@ -8,6 +8,8 @@
 | 5     | I/O Read Ptr Get  | ID = POP; PUSHes I/O read pointer for ID                                     | Program      |
 | 6     | I/O Length Get    | ID = POP; PUSHes I/O length for ID (or -1 if not available)                  | Program      |
 | 7     | I/O Reset         | ID = POP; Sets I/O read and write pointer to 0 for ID                        | Program      |
+| 8     | HW info           | ID = POP; PUSH HWINFO to stack [first 32 bits]                               | Program      |
+| 9     | HW info ptr       | ID = POP; RAMOffset = POP; Write HWINFO to RAMOffset; PUSH len               | Program      |
 | ...   |                   |                                                                              |              |
 | 128   | Illegal Opcode    | On any illegal opcode, PUSH $PC                                              | CPU          |
 | 129   | Error             | On any error, PUSH $PC, PUSH errno                                           | CPU          |

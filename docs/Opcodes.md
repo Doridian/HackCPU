@@ -81,8 +81,6 @@
 |                          | MUL64F   |  51 | `33` | RRVV   | RegDst   | RegSrc | RegDst *=  RegSrc                                                         |
 |                          | DIV64F   |  52 | `34` | RRVV   | RegDst   | RegSrc | RegDst /=  RegSrc                                                         |
 | Extra                    | DEBUG    | 203 | `CB` | N      |          |        |                                                                           |
-|                          | CPUID    |  53 | `35` | RRVV   | Reg      |        | Reg = CPUID                                                               |
-|                          | RAMSIZE  |  54 | `36` | RRVV   | Reg      |        | Reg = RAMSIZE                                                             |
 
 
 

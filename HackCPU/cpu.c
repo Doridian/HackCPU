@@ -285,12 +285,42 @@ static uint64_t pop64(cpu_state s) {
 #define IFNZ() if (rrvv32.reg1val != 0)
 
 static uint8_t cpu_interrupt(cpu_state s, uint8_t i) {
-	if (i > 7) {
+	if (i > INT_LAST_CPUHANDLED) {
 		cpu_interrupt_handler custom = s->interrupts[i];
 		if (custom) {
 			return custom(i);
 		}
 		return ERR_UNHANDLED_INTERRUPT;
+	}
+
+	uint32_t tmp = 4;
+	uint32_t *tmpptr;
+	if (i > INT_LAST_IO) {
+		switch (i) {
+		case INT_HWINFO:
+		case INT_HWINFO_PTR:
+			switch (pop(s)) {
+			case HWINFO_CPUID:
+				tmpptr = &s->id;
+				break;
+			case HWINFO_RAMSIZE:
+				tmpptr = &s->ram_size;
+				break;
+			default:
+				return ERR_INVALID_IO;
+			}
+
+			if (i == INT_HWINFO_PTR) {
+				mem_copy(s->ram + constrain_ram(s, pop(s)), tmpptr, tmp);
+				push(s, tmp);
+			}
+			else {
+				push(s, *tmpptr);
+			}
+
+			break;
+		}
+		return 0;
 	}
 
 	uint32_t ioid = pop(s);
@@ -697,12 +727,6 @@ static uint8_t _cpu_step(cpu_state s) {
 		break;
 	case I_POPNIL64:
 		s->reg.csp += 8;
-		break;
-	case I_CPUID:
-		*rrvv32.reg1 = s->id;
-		break;
-	case I_RAMSIZE:
-		*rrvv32.reg1 = s->ram_size;
 		break;
 	default:
 		return interrupt(s, INT_ILLEGAL_OPCODE);

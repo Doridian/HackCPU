@@ -15,6 +15,16 @@
 #define INT_IO_LENGTH_GET 6
 #define INT_IO_RESET 7
 
+#define INT_LAST_IO 7
+
+#define INT_HWINFO 8
+#define INT_HWINFO_PTR 9
+
+#define HWINFO_CPUID 0
+#define HWINFO_RAMSIZE 1
+
+#define INT_LAST_CPUHANDLED 9
+
 #define INT_TRAP 130
 #define INT_ERR 129
 #define INT_ILLEGAL_OPCODE 128

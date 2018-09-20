@@ -1,6 +1,9 @@
 #ROM 0
 
-RAMSIZE R6
+# Read RAM size
+PUSH 1
+INT 8
+POP R6
 SUB R6, 2048
 
 MOV IHBASE, 0

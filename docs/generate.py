@@ -1,19 +1,21 @@
-file = open('Opcodes.md')
+file = open("Opcodes.md", "r")
+file_out = open("Opcodes_out.md", "w")
 
 def parseMDTableLine(line):
-	split = line.split('|')
-	return list(map(str.strip, split))
+	return line.split('|')
 
-columns = parseMDTableLine(file.readline())
+line = file.readline()
+columns = parseMDTableLine(line)
+file_out.write(line)
 
 colIndices = {}
 
 def cv(row, col):
 	global colIndices
-	return row[colIndices[col]]
+	return row[colIndices[col]].strip()
 
 for col in range(0, len(columns)):
-	colIndices[columns[col]] = col
+	colIndices[columns[col].strip()] = col
 
 instructions_py = []
 instructions = []
@@ -21,15 +23,21 @@ itypes = []
 
 INDENT = '	'
 
-lastopid = -1
+_b8 = 1 << 7
+_b7 = 1 << 6
+opid_by_type = {'RRVV': 0, 'RRVV64': _b7, 'N': _b8, 'Other': _b7 | _b8}
+opcodes_changed = False
+all_opcodes = []
+
 while True:
-	row = file.readline()
-	if not row:
+	line = file.readline()
+	if not line:
 		break
 
-	row = parseMDTableLine(row)
+	row = parseMDTableLine(line)
 	insn_name = cv(row, 'Name')
 	if not insn_name or insn_name == 'Name':
+		file_out.write(line)
 		continue
 
 	is_dashonly = True
@@ -39,28 +47,55 @@ while True:
 			break
 
 	if is_dashonly:
+		file_out.write(line)
 		continue
 
-	category = cv(row, 'Category')
-	if category:
-		categoryx = '%s# %s' % (INDENT, category)
-		instructions_py.append(categoryx)
-		categoryx = '%s// %s' % (INDENT, category)
-		instructions.append(categoryx)
-		itypes.append(categoryx)
+	insn_type = cv(row, 'Type')
+	insn_type_key = insn_type
+	if not insn_type_key in opid_by_type:
+		insn_type_key = 'Other'
 
-	opid = int(cv(row, 'OP'))
-	instructions_py.append('%s"%s": OpCode(%d, IT_%s, "%s"),' % (INDENT, insn_name, opid, cv(row, 'Type'), insn_name))
-	lastopid += 1
-	if opid == 0 or lastopid < opid:
+	opid = opid_by_type[insn_type_key]
+	opid_by_type[insn_type_key] = opid_by_type[insn_type_key] + 1
+
+	if opid != int(cv(row, 'OP'), 10):
+		opcodes_changed = True
+	row[colIndices['OP']] = ' %03d ' % opid
+
+	while opid >= len(all_opcodes):
+		all_opcodes.append(None)
+
+	all_opcodes[opid] = row
+
+	file_out.write('|'.join(row))
+
+lastopid = -1
+for rowid in range(0, len(all_opcodes)):
+	row = all_opcodes[rowid]
+	if not row:
+		itypes.append('%sIT_INVALID,' % INDENT)
+		continue
+
+	opid = int(cv(row, 'OP'), 10)
+	insn_name = cv(row, 'Name')
+	insn_type = cv(row, 'Type')
+
+	#opid = int(cv(row, 'OP'))
+	instructions_py.append('%s"%s": OpCode(%d, IT_%s, "%s"),' % (INDENT, insn_name, opid, insn_type, insn_name))
+	if opid == 0 or opid != lastopid + 1:
 		instructions.append('%sI_%s = %s,' % (INDENT, insn_name, opid))
 	else:
 		instructions.append('%sI_%s,' % (INDENT, insn_name))
-	while lastopid < opid:
-		itypes.append('%sIT_INVALID,' % INDENT)
-		lastopid += 1
-	itypes.append('%sIT_%s,' % (INDENT, cv(row, 'Type')))
 
+	lastopid = opid
+
+	itypes.append('%sIT_%s,' % (INDENT, insn_type))
+
+file.close()
+file_out.close()
+
+if opcodes_changed:
+	print("OPID mismatch. Move Opcodes_out.md to Opcodes.md")
 
 f = open("../asm/opcodes.py", "w")
 f.write('''

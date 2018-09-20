@@ -409,6 +409,11 @@ uint8_t cpu_run(cpu_state s) {
 	}
 }
 
+#define OPTYPE_RRVV   (0b00000000)
+#define OPTYPE_RRVV64 (0b01000000)
+#define OPTYPE_N      (0b10000000)
+#define OPTYPE_Other  (0b11000000)
+
 static uint8_t _cpu_step(cpu_state s) {
 	s->instruction_counter++;
 	uint8_t op = iread8(s);
@@ -423,14 +428,14 @@ static uint8_t _cpu_step(cpu_state s) {
 	regregvalval32_t rrvv32;
 	regregvalval64_t rrvv64;
 
-	switch (ITYPES[op]) {
-	case IT_RRVV:
+	switch (op & 0b11000000) {
+	case OPTYPE_RRVV:
 		rrvv32 = ireadrrvv32(s);
 		if (rrvv32.reg1 == NULL || rrvv32.reg2 == NULL) {
 			return ERR_INVALID_REGISTER;
 		}
 		break;
-	case IT_RRVV64:
+	case OPTYPE_RRVV64:
 		rrvv64 = ireadrrvv64(s);
 		if (rrvv64.reg1 == NULL || rrvv64.reg2 == NULL) {
 			return ERR_INVALID_REGISTER;

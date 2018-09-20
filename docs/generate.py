@@ -1,12 +1,9 @@
-file = open("Opcodes.md", "r")
-file_out = open("Opcodes_out.md", "w")
+file = open('Opcodes.md', 'r')
 
 def parseMDTableLine(line):
 	return line.split('|')
 
-line = file.readline()
-columns = parseMDTableLine(line)
-file_out.write(line)
+columns = parseMDTableLine(file.readline())
 
 colIndices = {}
 
@@ -25,8 +22,7 @@ INDENT = '	'
 
 _b8 = 1 << 7
 _b7 = 1 << 6
-opid_by_type = {'RRVV': 0, 'RRVV64': _b7, 'Other': _b8}
-opcodes_changed = False
+
 all_opcodes = []
 
 while True:
@@ -37,7 +33,6 @@ while True:
 	row = parseMDTableLine(line)
 	insn_name = cv(row, 'Name')
 	if not insn_name or insn_name == 'Name':
-		file_out.write(line)
 		continue
 
 	is_dashonly = True
@@ -47,42 +42,41 @@ while True:
 			break
 
 	if is_dashonly:
-		file_out.write(line)
 		continue
 
-	insn_type = cv(row, 'Type')
-	insn_type_key = insn_type
-	if not insn_type_key in opid_by_type:
-		insn_type_key = 'Other'
+	opid = int(cv(row, 'OP'), 10)
 
-	opid = opid_by_type[insn_type_key]
-	opid_by_type[insn_type_key] = opid_by_type[insn_type_key] + 1
+	optypeid = (opid & (_b7 | _b8))
+	if optypeid == 0:
+		optype = 'RRVV'
+	elif optypeid == _b7:
+		optype = 'RRVV64'
+	else:
+		optype = 'Other'
 
-	if opid != int(cv(row, 'OP'), 10):
-		opcodes_changed = True
-	row[colIndices['OP']] = ' %3d ' % opid
-	row[colIndices['0xOP']] = ' `%02X` ' % opid
+	optype_doc = cv(row, 'Type')
+	if optype != optype_doc and (optype_doc == 'RRVV' or optype_doc == 'RRVV64' or optype == 'RRVV' or optype == 'RRVV64'):
+		raise ValueError('Opcode %s binary type would be %s, but is docoumented as %s' % (insn_name, optype, optype_doc))
 
 	while opid >= len(all_opcodes):
 		all_opcodes.append(None)
 
 	if all_opcodes[opid]:
-		raise ValueError("Duplicate OPCode: %d" % opid)
+		raise ValueError('Duplicate OPCode: %d' % opid)
 
-	all_opcodes[opid] = row
+	all_opcodes[opid] = { 'Name': insn_name, 'Type': optype_doc }
 
-	file_out.write('|'.join(row))
+file.close()
 
 lastopid = -1
-for rowid in range(0, len(all_opcodes)):
-	row = all_opcodes[rowid]
+for opid in range(0, len(all_opcodes)):
+	row = all_opcodes[opid]
 	if not row:
 		itypes.append('%sIT_INVALID,' % INDENT)
 		continue
 
-	opid = int(cv(row, 'OP'), 10)
-	insn_name = cv(row, 'Name')
-	insn_type = cv(row, 'Type')
+	insn_name = row['Name']
+	insn_type = row['Type']
 
 	#opid = int(cv(row, 'OP'))
 	instructions_py.append('%s"%s": OpCode(%d, IT_%s, "%s"),' % (INDENT, insn_name, opid, insn_type, insn_name))
@@ -95,13 +89,7 @@ for rowid in range(0, len(all_opcodes)):
 
 	itypes.append('%sIT_%s,' % (INDENT, insn_type))
 
-file.close()
-file_out.close()
-
-if opcodes_changed:
-	print("OPID mismatch. Move Opcodes_out.md to Opcodes.md")
-
-f = open("../asm/opcodes.py", "w")
+f = open('../asm/opcodes.py', 'w')
 f.write('''
 IT_RRVV = 0
 IT_N = 1
@@ -133,7 +121,7 @@ OPCODES = {
 ''')
 f.close()
 
-f = open("../HackCPU/opcodes.h", "w")
+f = open('../HackCPU/opcodes.h', 'w')
 f.write('''
 #ifndef OPCODES_H_INCLUDED
 #define OPCODES_H_INCLUDED

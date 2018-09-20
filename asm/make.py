@@ -347,9 +347,11 @@ def parse():
 						if x == 0:
 							useopc = "RETN"
 							lsplit = []
+						elif x < 0:
+							raise TypeError("DRET arg must be >= 0")
 						else:
 							lsplit[0] = "%d" % x
-					except:
+					except ValueError:
 						pass
 				else:
 					raise ValueError("DRET only supports 0 or 1 parameter")

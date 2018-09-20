@@ -49,16 +49,71 @@ static uint8_t fhrom_read(uint32_t id, iostream_t* io) {
 
 #define HEXDUMP_SIZE 12
 
-int main(int argc, const char **argv) {
-	cpu_state s = cpu_init(IO_COUNT_DEFAULT, 1, RAM_SIZE_DEFAULT);
+static int strtol_unit(const char *arg) {
+	size_t len = strlen(arg);
+	int multiplier = 1;
+	if (len > 1) {
+		int striplast = 1;
+		switch (arg[len - 1]) {
+		case 'k':
+			multiplier = 1024;
+			break;
+		case 'M':
+			multiplier = 1024 * 1024;
+			break;
+		case 'G':
+			multiplier = 1024 * 1024 * 1024;
+			break;
+		default:
+			striplast = 0;
+			break;
+		}
+	}
+	return strtol(arg, NULL, 10) * multiplier;
+}
 
-	if (argc > 1) {
-		const char *romfname = argv[1];
+int main(int argc, const char **argv) {
+	const char *romfname = NULL;
+	uint32_t ramsize = RAM_SIZE_DEFAULT;
+
+	char opt = 0;
+	for (int i = 1; i < argc; i++) {
+		const char* arg = argv[i];
+		if (opt != 0) {
+			switch (opt) {
+			case 'm':
+				ramsize = strtol_unit(arg);
+				break;
+			default:
+				printf("Options %c unknown\n", opt);
+				return 1;
+			}
+			opt = 0;
+		} else if (arg[0] == '-') {
+			if (strlen(arg) != 2) {
+				printf("Options need a single char name, a dangling - or -longname is invalid\n");
+				return 1;
+			}
+			opt = arg[1];
+		}
+		else {
+			romfname = arg;
+		}
+	}
+
+	if (opt != 0) {
+		printf("Options need values\n");
+		return 1;
+	}
+
+	cpu_state s = cpu_init(IO_COUNT_DEFAULT, 1, ramsize);
+
+	if (romfname != NULL) {
 		FILE *romfh;
 #ifdef _MSC_VER
 		if (fopen_s(&romfh, romfname, "rb") != 0) {
 			return 5;
-		}
+}
 #else
 		romfh = fopen(romfname, "rb");
 		if (romfh == NULL) {
@@ -74,6 +129,7 @@ int main(int argc, const char **argv) {
 		fread(fhrom_data, romlen, 1, romfh);
 		fclose(romfh);
 	}
+
 	s->io[IO_STDOUT]->write = stdout_write;
 	s->io[IO_STDIN]->read = stdin_read;
 

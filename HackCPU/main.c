@@ -85,7 +85,7 @@ int main(int argc, const char **argv) {
 				ramsize = strtol_unit(arg);
 				break;
 			default:
-				printf("Options %c unknown\n", opt);
+				printf("Option %c unknown\n", opt);
 				return 1;
 			}
 			opt = 0;

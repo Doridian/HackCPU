@@ -25,7 +25,7 @@ INDENT = '	'
 
 _b8 = 1 << 7
 _b7 = 1 << 6
-opid_by_type = {'RRVV': 0, 'RRVV64': _b7, 'N': _b8, 'Other': _b7 | _b8}
+opid_by_type = {'RRVV': 0, 'RRVV64': _b7, 'Other': _b8}
 opcodes_changed = False
 all_opcodes = []
 
@@ -64,6 +64,9 @@ while True:
 
 	while opid >= len(all_opcodes):
 		all_opcodes.append(None)
+
+	if all_opcodes[opid]:
+		raise ValueError("Duplicate OPCode: %d" % opid)
 
 	all_opcodes[opid] = row
 

@@ -53,16 +53,16 @@
 |                          | CNZ      | 041 | RRVV   | RegCheck | Reg    | Check if RegCheck != 0                                                    |
 |                          | RETN     | 131 | N      |          |        | CSP = BSP, BSP = POP, PC = POP                                            |
 |                          | RETNA    | 042 | RRVV   | Reg      |        | RETN, CSP += Reg                                                          |
-|                          | RETNAC   | 192 | U8     | C        |        | RETN, CSP += C                                                            |
+|                          | RETNAC   | 132 | U8     | C        |        | RETN, CSP += C                                                            |
 | Special                  | INT      | 043 | RRVV   | Reg      |        | CALL RAM[IHBASE+Reg*4]                                                    |
 |                          | SETIH    | 044 | RRVV   | Reg      | Reg2   | RAM[IHBASE+Reg*4] = Reg2 (0 for disable)                                  |
-|                          | HALT     | 132 | N      |          |        | Unset trap!!! Zero Memory!!! Halt execution                               |
-|                          | RESET    | 133 | N      |          |        | Unset trap!!! Reloads bootloader, jumps into it                           |
-|                          | TRAP     | 134 | N      |          |        | Trigger TRAP interrupt after next instruction                             |
-|                          | ENCOFF   | 135 | N      |          |        | FLAGR &= ~FLAG_ENCON                                                      |
-|                          | ENCON    | 136 | N      |          |        | FLAGR                                                                     |
-|                          | PUSHREG  | 137 | N      |          |        | PUSH64 R12; PUSH64 R34; PUSH64 R56                                        |
-|                          | POPREG   | 138 | N      |          |        | POP64 R56; POP64 R34; POP64 R12                                           |
+|                          | HALT     | 133 | N      |          |        | Unset trap!!! Zero Memory!!! Halt execution                               |
+|                          | RESET    | 134 | N      |          |        | Unset trap!!! Reloads bootloader, jumps into it                           |
+|                          | TRAP     | 135 | N      |          |        | Trigger TRAP interrupt after next instruction                             |
+|                          | ENCOFF   | 136 | N      |          |        | FLAGR &= ~FLAG_ENCON                                                      |
+|                          | ENCON    | 137 | N      |          |        | FLAGR                                                                     |
+|                          | PUSHREG  | 138 | N      |          |        | PUSH64 R12; PUSH64 R34; PUSH64 R56                                        |
+|                          | POPREG   | 139 | N      |          |        | POP64 R56; POP64 R34; POP64 R12                                           |
 | Integer Arithmetic 64bit | ADD64    | 070 | RRVV64 | RegDst   | RegSrc | RegDst +=  RegSrc                                                         |
 |                          | SUB64    | 071 | RRVV64 | RegDst   | RegSrc | RegDst -=  RegSrc                                                         |
 |                          | MUL64    | 072 | RRVV64 | RegDst   | RegSrc | RegDst *=  RegSrc                                                         |
@@ -81,6 +81,6 @@
 |                          | SUB64F   | 050 | RRVV   | RegDst   | RegSrc | RegDst -=  RegSrc                                                         |
 |                          | MUL64F   | 051 | RRVV   | RegDst   | RegSrc | RegDst *=  RegSrc                                                         |
 |                          | DIV64F   | 052 | RRVV   | RegDst   | RegSrc | RegDst /=  RegSrc                                                         |
-| Extra                    | DEBUG    | 139 | N      |          |        |                                                                           |
+| Extra                    | DEBUG    | 140 | N      |          |        |                                                                           |
 |                          | CPUID    | 053 | RRVV   | Reg      |        | Reg = CPUID                                                               |
 |                          | RAMSIZE  | 054 | RRVV   | Reg      |        | Reg= RAMSIZE                                                              |

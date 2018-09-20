@@ -417,9 +417,6 @@ uint8_t cpu_run(cpu_state s) {
 static uint8_t _cpu_step(cpu_state s) {
 	s->instruction_counter++;
 	uint8_t op = iread8(s);
-	if (op >= I_FIRST_INVALID) {
-		return interrupt(s, INT_ILLEGAL_OPCODE);
-	}
 
 	//printf("OP = %d\n", op);
 

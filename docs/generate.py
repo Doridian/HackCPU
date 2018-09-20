@@ -27,7 +27,7 @@ all_opcodes = []
 
 while True:
 	line = file.readline()
-	if not line:
+	if not line or line.strip() == '':
 		break
 
 	row = parseMDTableLine(line)
@@ -47,16 +47,24 @@ while True:
 	opid = int(cv(row, 'OP'), 10)
 
 	optypeid = (opid & (_b7 | _b8))
-	if optypeid == 0:
+	if optypeid == 0 or optypeid == _b7:
 		optype = 'RRVV'
-	elif optypeid == _b7:
+	elif optypeid == _b8:
 		optype = 'RRVV64'
 	else:
 		optype = 'Other'
 
 	optype_doc = cv(row, 'Type')
 	if optype != optype_doc and (optype_doc == 'RRVV' or optype_doc == 'RRVV64' or optype == 'RRVV' or optype == 'RRVV64'):
+		#opid = opid & ~(_b7 | _b8)
+		#if optype_doc == 'RRVV64':
+		#	opid = opid | _b8
+		#else:
+		#	opid = opid | (_b7 | _b8)
 		raise ValueError('Opcode %s binary type would be %s, but is docoumented as %s' % (insn_name, optype, optype_doc))
+
+	#row[colIndices['OP']] = ' %3d ' % opid
+	#row[colIndices['0xOP']] = ' `%2X` ' % opid
 
 	while opid >= len(all_opcodes):
 		all_opcodes.append(None)
@@ -65,6 +73,44 @@ while True:
 		raise ValueError('Duplicate OPCode: %d' % opid)
 
 	all_opcodes[opid] = { 'Name': insn_name, 'Type': optype_doc }
+
+	#print('|'.join(row).strip())
+
+def opcodeMapMap(val):
+	if val:
+		return '#'
+	return '_'
+def opcodeMap(cat, a, b):
+	used = 0
+	res = ''
+
+	_b = len(all_opcodes)
+	if b > _b:
+		first_free = -_b
+		empty = (b - _b)
+		res_suf = '_' * empty
+	else:
+		first_free = -9999
+		empty = 0
+		_b = b
+		res_suf = ''
+
+	for i in range(a, _b):
+		if all_opcodes[i]:
+			res += '#'
+			used += 1
+		else:
+			if first_free < 0:
+				first_free = i
+			res += '_'
+			empty += 1
+
+	return "%s [%s%s] (%3d / %3d) = %3d%% -> %d" % (cat, res, res_suf, used, (b - a), ((used * 100) / (b - a)), abs(first_free))
+
+print(opcodeMap("RRVV 1", 0,   64))
+print(opcodeMap("RRVV 2", 64,  128))
+print(opcodeMap("RRVV64", 128, 192))
+print(opcodeMap("Other ", 192, 256))
 
 file.close()
 
@@ -95,11 +141,7 @@ IT_RRVV = 0
 IT_N = 1
 IT_RRVV64 = 2
 IT_VIRTUAL = 3
-IT_I8 = 4
-IT_I8I8 = 5
-IT_U8 = 6
-IT_U8U8 = 7
-IT_INVALID = 8
+IT_INVALID = 4
 
 class OpCode:
 	def __init__(self, i, itype, iname):
@@ -129,21 +171,6 @@ f.write('''
 enum INSTRUCTION {
 ''' + '\n'.join(instructions) + '''
 	I_FIRST_INVALID
-};
-
-enum ITYPE {
-	IT_RRVV = 0,
-	IT_N,
-	IT_RRVV64,
-	IT_I8,
-	IT_I8I8,
-	IT_U8,
-	IT_U8U8,
-	IT_INVALID
-};
-
-static uint8_t ITYPES[] = {
-''' + '\n'.join(itypes) + '''
 };
 
 #endif // OPCODES_H_INCLUDED

@@ -410,9 +410,9 @@ uint8_t cpu_run(cpu_state s) {
 }
 
 #define OPTYPE_RRVV   (0b00000000)
-#define OPTYPE_RRVV64 (0b01000000)
-#define OPTYPE_Other  (0b10000000)
-#define OPTYPE_Other2 (0b11000000)
+#define OPTYPE_RRVV2  (0b01000000)
+#define OPTYPE_RRVV64 (0b10000000)
+#define OPTYPE_N      (0b11000000)
 
 static uint8_t _cpu_step(cpu_state s) {
 	s->instruction_counter++;
@@ -420,13 +420,12 @@ static uint8_t _cpu_step(cpu_state s) {
 
 	//printf("OP = %d\n", op);
 
-	uint8_t tmp8;
-
 	regregvalval32_t rrvv32;
 	regregvalval64_t rrvv64;
 
 	switch (op & 0b11000000) {
 	case OPTYPE_RRVV:
+	case OPTYPE_RRVV2:
 		rrvv32 = ireadrrvv32(s);
 		if (rrvv32.reg1 == NULL || rrvv32.reg2 == NULL) {
 			return ERR_INVALID_REGISTER;
@@ -438,7 +437,8 @@ static uint8_t _cpu_step(cpu_state s) {
 			return ERR_INVALID_REGISTER;
 		}
 		break;
-	// All other cases are handled by the instruction itself
+	case OPTYPE_N:
+		break;
 	}
 
 	switch (op) {
@@ -697,11 +697,6 @@ static uint8_t _cpu_step(cpu_state s) {
 		break;
 	case I_POPNIL64:
 		s->reg.csp += 8;
-		break;
-	case I_RETNAC:
-		tmp8 = iread8(s);
-		DORETN();
-		s->reg.csp += tmp8;
 		break;
 	case I_CPUID:
 		*rrvv32.reg1 = s->id;

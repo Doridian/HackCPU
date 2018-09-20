@@ -169,9 +169,6 @@ class Instruction:
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
 
-		if self.opcode.type == IT_I8 or self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8:
-			return 1 + len(self.params)
-
 		mylen = 1 + ceil(len(self.params) / 2)
 		for i in range(0, len(self.params)):
 			param = self.params[i]
@@ -201,16 +198,6 @@ class Instruction:
 		encwrite(self.opcode.i.to_bytes(1, BYTEORDER))
 
 		plen = len(self.params)
-
-		if self.opcode.type == IT_I8 or self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8:
-			if (self.opcode.type == IT_I8 or self.opcode.type == IT_U8) and plen != 1:
-				raise ValueError("Instruction only expects one argument")
-			if (self.opcode.type == IT_I8I8 or self.opcode.type == IT_U8U8) and plen != 2:
-				raise ValueError("Instruction expects two arguments")
-
-			for i in range(0, plen):
-				encwrite(self.params[i].cval.to_bytes(1, BYTEORDER, signed=(self.opcode.type == IT_U8 or self.opcode.type == IT_U8U8)))
-			return
 
 		if self.opcode.type == IT_N:
 			if plen != 0:
@@ -354,14 +341,11 @@ def parse():
 				if len(lsplit) == 0:
 					useopc = "RETN"
 				elif len(lsplit) == 1:
-					try:
-						x = int(lsplit[0], 10) * 4
-						if x > 0xFF:
-							raise ValueError("Too large for RETNAC")
-						lsplit[0] = "%d" % x
-						useopc = "RETNAC"
+					try :
+						lsplit[0] = "%d" % (int(lsplit[0], 10) * 4)
 					except:
-						useopc = "RETNA"
+						pass
+					useopc = "RETNA"
 				else:
 					raise ValueError("DRET only supports 0 or 1 parameter")
 				insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))

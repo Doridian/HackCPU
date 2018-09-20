@@ -33,7 +33,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{BF1321C4-626E-4A9A-BD98-E0CDEE51D632}</ProjectGuid>
-    <RootNamespace>HMCPU</RootNamespace>
+    <RootNamespace>HackCPU</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

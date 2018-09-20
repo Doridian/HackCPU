@@ -341,8 +341,8 @@ def parse():
 				if len(lsplit) == 0:
 					useopc = "RETN"
 				elif len(lsplit) == 1:
+					useopc = "RETNA"
 					try :
-						useopc = "RETNA"
 						x = int(lsplit[0], 10) * 4
 						if x == 0:
 							useopc = "RETN"

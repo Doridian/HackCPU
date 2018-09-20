@@ -41,6 +41,7 @@ D3              <---- CSP
 ```
 
 ## Further reading
-[Opcodes](docs/Opcodes.md)
-[Registers](docs/Registers.md)
-[IO](docs/IO.md)
+- [Opcodes](docs/Opcodes.md)
+- [Registers](docs/Registers.md)
+- [Interrupts](docs/Interrupts.md)
+- [IO](docs/IO.md)

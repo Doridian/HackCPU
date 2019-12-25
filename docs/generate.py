@@ -135,9 +135,8 @@ for opid in range(0, len(all_opcodes)):
 
 	itypes.append('%sIT_%s,' % (INDENT, insn_type))
 
-f = open('../asm/opcodes.py', 'w')
-f.write('''
-IT_RRVV = 0
+f = open('../asm/opcode_defs.py', 'w')
+f.write('''IT_RRVV = 0
 IT_N = 1
 IT_RRVV64 = 2
 IT_VIRTUAL = 3

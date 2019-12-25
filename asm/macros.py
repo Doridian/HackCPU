@@ -4,6 +4,7 @@
 # %END
 
 from defs import BYTEORDER
+from re import sub, escape, compile
 
 class Macro:
     def __init__(self, params = [], lines = []):
@@ -49,9 +50,9 @@ class BOOTLOADERMacro(Macro):
             transpiler.emitInstruction("MOV64", ["ENCREG", int_enckkey])
             transpiler.emitInstruction("ENCON")
             transpiler.emitInstruction("__ENABLE_ENC", [int_enckkey])
-            transpiler.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN]", "[__BOOTLOADER_BEGIN]"])
-            transpiler.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]", "[__BOOTLOADER_BEGIN + 2]"])
-            transpiler.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]", "[__BOOTLOADER_BEGIN + 4]"])
+            transpiler.emitInstruction("XOR", ["[:__BOOTLOADER_BEGIN]", "[:__BOOTLOADER_BEGIN]"])
+            transpiler.emitInstruction("XOR", ["[:__BOOTLOADER_BEGIN + 2]", "[:__BOOTLOADER_BEGIN + 2]"])
+            transpiler.emitInstruction("XOR", ["[:__BOOTLOADER_BEGIN + 4]", "[:__BOOTLOADER_BEGIN + 4]"])
 
 def makeSimpleMacro(outerParams, outerLines):
     return lambda params = [], lines = []: SIMPLEMacro(params, lines, outerParams, outerLines)
@@ -63,14 +64,24 @@ class SIMPLEMacro(Macro):
         self.outerLines = outerLines
 
     def emit(self, transpiler):
-        pass
+        subs = []
+
+        for i, param in enumerate(self.outerParams):
+            search = compile("([^\\w]|^)%s([^\\w]|$)" % escape(param))
+            replace = "\\g<1>%s\\g<2>" % self.params[i]
+            subs.append((search, replace))
+
+        for line in self.outerLines:
+            for subtupl in subs:
+                line = sub(subtupl[0], subtupl[1], line)
+            transpiler.emitLine(line)
 
 class MACROMacro(Macro):
     def __init__(self, params = [], lines = []):
         Macro.__init__(self, params, lines)
 
     def emit(self, transpiler):
-        transpiler.macros[self.params[0]] = makeSimpleMacro(self.params, self.lines)
+        transpiler.macros[self.params[0]] = makeSimpleMacro(self.params[1:], self.lines)
 
 macros = {}
 macros["ROM"] = ROMMacro

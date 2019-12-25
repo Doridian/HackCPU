@@ -137,6 +137,7 @@ class Transpiler:
                 self.inMacro = None
                 return
             self.inMacro[2].append(line)
+            return
 
         if opcodeNameUpper[0] == ":":
             self.emitLabelHere(opcodeName[1:])

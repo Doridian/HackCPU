@@ -1,5 +1,5 @@
 from defs import BYTEORDER
-from instruction_list import getInsturctionClass
+from instruction_list import getInstructionClass
 from opcode_defs import OPCODES
 from parameter import Parameter
 from binascii import unhexlify
@@ -18,12 +18,15 @@ class Transpiler:
         self.in_f = open(input_file, "r")
         self.out_f = open(output_file, "wb")
         self.currentLine = ""
+        self.writepos = 0
 
     def close(self):
         self.in_f.close()
         self.out_f.close()
 
     def encwrite(self, bs):
+        self.writepos += len(bs)
+
         if not self.enckey:
             self.out_f.write(bs)
             self.enccpos += len(bs)
@@ -44,13 +47,8 @@ class Transpiler:
         return self.emitInstruction("NOP")
 
     def emitInstruction(self, name, params = []):
-        InsturctionCtor = getInsturctionClass(name)
-        opcode = None
-        if name in OPCODES:
-            opcode = OPCODES[name]
-        insn = InsturctionCtor(self, opcode, list(map(Parameter, params)))
-        self.instructions.append(insn)
-        return insn
+        InstructionCtor = getInstructionClass(name)
+        return InstructionCtor.handle(InstructionCtor, name, self, params)
 
     def emitLabelHere(self, name):
         insn = self.emitInstruction("REM")
@@ -110,49 +108,7 @@ class Transpiler:
             elif opcodeName == "#ALIGN":
                 self.emitInstruction("ALIGN", [int(lsplit[0], 0), int(lsplit[1], 0)])
         else:
-            if opcodeName == "DB":
-                lbl = "db_" + lsplit[0]
-                rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
-                if rawData[0] == '"':
-                    if rawData[-1] != '"' or len(rawData) < 2:
-                        raise ValueError("Missing closing quote in DB string")
-                    rawData = bytes(rawData[1:-1], "ascii")
-                elif rawData[0:1] == "0x":
-                    rawData = unhexlify(rawData[2:])
-                else:
-                    rawData = unhexlify(rawData.replace(" ", ""))
-                insn = self.emitInstruction("DB", [rawData])
-                self.emitLabel(lbl, insn)
-                self.emitLabel(lbl + "_len", len(rawData))
-            elif opcodeName == "DRET":
-                useopc = None
-                if len(lsplit) == 0:
-                    useopc = "RETN"
-                elif len(lsplit) == 1:
-                    useopc = "RETNA"
-                    try :
-                        x = int(lsplit[0], 10) * 4
-                        if x == 0:
-                            useopc = "RETN"
-                            lsplit = []
-                        elif x < 0:
-                            raise TypeError("DRET arg must be >= 0")
-                        else:
-                            lsplit[0] = "%d" % x
-                    except ValueError:
-                        pass
-                else:
-                    raise ValueError("DRET only supports 0 or 1 parameter")
-                self.emitInstruction(useopc, lsplit)
-            elif opcodeName == "MOVARG":
-                p1 = lsplit[0]
-                argno = int(lsplit[1], 10)
-                if argno < 1:
-                    raise ValueError("MOVARG argno must be at least 1")
-                p2 = "[BSP + %d]" % ((argno * 4) + 4)
-                self.emitInstruction("MOV", [p1, p2])
-            else:
-                self.emitInstruction(opcodeName, lsplit)
+            self.emitInstruction(opcodeName, lsplit)
 
     def parse(self):
         self.suffix = None
@@ -170,7 +126,15 @@ class Transpiler:
         self.emitLabelHere("ENDADDR")
 
         for insn in self.instructions:
+            write_oldpos = self.writepos
+            insn_len = insn.len()
+
             insn.write()
+
+            write_len = self.writepos - write_oldpos
+
+            if write_len != insn_len:
+                raise ValueError("Instruction %s gave length %d but wrote %d" % (insn.opcode and insn.opcode.name or str(insn), insn_len, write_len))
 
         if self.suffix != None:
             self.out_f.write(self.suffix)

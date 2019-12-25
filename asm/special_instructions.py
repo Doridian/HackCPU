@@ -1,10 +1,11 @@
 from instruction import Instruction
+from parameter import Parameter
 from opcode_defs import OPCODES
 from defs import BYTEORDER
+from binascii import unhexlify
 
 NOPCODE = OPCODES["NOP"]
 NOPCODEB = NOPCODE.i.to_bytes(1, BYTEORDER)
-REMCODE = OPCODES["REM"]
 
 class AlignInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
@@ -32,6 +33,15 @@ class DBInstruction(Instruction):
     
 	def len(self):
 		return len(self.params[0].raw)
+
+	@staticmethod
+	def handle(InstructionCtor, name, transpiler, rawParams):
+		lbl = "db_" + rawParams[0]
+		rawData = bytes(rawParams[1], "ascii")
+		insn = Instruction.handle(InstructionCtor, name, transpiler, [rawData])
+		transpiler.emitLabel(lbl, insn)
+		transpiler.emitLabel(lbl + "_len", len(rawData))
+		return insn
 
 	def write(self):
 		cval = self.params[0].raw
@@ -62,3 +72,43 @@ class REMInstruction(Instruction):
 
 	def write(self):
 		pass
+
+class MOVARGInstruction(Instruction):
+	def __init__(self, transpiler, opcode, params = []):
+		Instruction.__init__(self, transpiler, opcode, params)
+
+	@staticmethod
+	def handle(InstructionCtor, name, transpiler, rawParams):
+		p1 = rawParams[0]
+		argno = int(rawParams[1], 10)
+		if argno < 1:
+			raise ValueError("MOVARG argno must be at least 1")
+		p2 = "[BSP + %d]" % ((argno * 4) + 4)
+		return Instruction.handle(InstructionCtor, "MOV", transpiler, [p1, p2])
+
+class DRETInstruction(Instruction):
+	def __init__(self, transpiler, opcode, params = []):
+		Instruction.__init__(self, transpiler, opcode, params)
+
+	@staticmethod
+	def handle(InstructionCtor, name, transpiler, rawParams):
+		useopc = None
+		outParams = []
+		if len(rawParams) == 0:
+			useopc = "RETN"
+		elif len(rawParams) == 1:
+			useopc = "RETNA"
+			try :
+				x = int(rawParams[0], 10) * 4
+				if x == 0:
+					useopc = "RETN"
+					outParams = []
+				elif x < 0:
+					raise TypeError("DRET arg must be >= 0")
+				else:
+					outParams = ["%d" % x]
+			except ValueError:
+				pass
+		else:
+			raise ValueError("DRET only supports 0 or 1 parameter")
+		return Instruction.handle(InstructionCtor, useopc, transpiler, outParams)

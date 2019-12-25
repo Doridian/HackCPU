@@ -1,4 +1,5 @@
-from opcode_defs import IT_RRVV, IT_RRVV64, IT_N, IT_VIRTUAL, IT_INVALID
+from opcode_defs import IT_RRVV, IT_RRVV64, IT_N, IT_VIRTUAL, IT_INVALID, OPCODES
+from parameter import Parameter
 from defs import BYTEORDER
 from math import ceil
 
@@ -9,7 +10,18 @@ class Instruction:
 		self.params = params
 		self.b64 = self.opcode and self.opcode.type == IT_RRVV64
 		self.bpos = transpiler.bpos
+		print(opcode and opcode.name or "N/A", self.len(), transpiler.bpos)
 		transpiler.bpos += self.len()
+
+	# Return falsey for default behaviour (instantiate this class, etc), return truthy
+	@staticmethod
+	def handle(InstructionCtor, name, transpiler, rawParams):
+		opcode = None
+		if name in OPCODES:
+			opcode = OPCODES[name]
+		insn = InstructionCtor(transpiler, opcode, list(map(Parameter, rawParams)))
+		transpiler.instructions.append(insn)
+		return insn
 
 	def len(self):
 		if not self.opcode or self.opcode.type == IT_VIRTUAL or self.opcode.type == IT_INVALID:

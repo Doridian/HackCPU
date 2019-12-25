@@ -1,10 +1,10 @@
 from instruction import Instruction
-from special_instructions import ChangeEncInstruction, AlignInstruction, DBInstruction, REMInstruction
+from special_instructions import ChangeEncInstruction, AlignInstruction, DBInstruction, REMInstruction, MOVARGInstruction, DRETInstruction
 from opcode_defs import OPCODES
 
 specialInstructionList = {}
 
-def getInsturctionClass(opcodeName):
+def getInstructionClass(opcodeName):
     if opcodeName in specialInstructionList:
         return specialInstructionList[opcodeName]
     if not opcodeName in OPCODES:
@@ -16,3 +16,5 @@ specialInstructionList["__ENABLE_ENC"] = ChangeEncInstruction
 specialInstructionList["ALIGN"] = AlignInstruction
 specialInstructionList["DB"] = DBInstruction
 specialInstructionList["REM"] = REMInstruction
+specialInstructionList["MOVARG"] = MOVARGInstruction
+specialInstructionList["DRET"] = DRETInstruction

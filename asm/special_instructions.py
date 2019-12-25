@@ -30,14 +30,14 @@ class DBInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
 		Instruction.__init__(self, transpiler, opcode, params)
     
-	def getval(self):
+	def _getval(self):
 		param = self.params[0].raw
 		if isinstance(param, str):
 			return bytes(param, "ascii")
 		return param
 
 	def _len(self):
-		return len(self.getval())
+		return len(self._getval())
 
 	@staticmethod
 	def handle(InstructionCtor, name, transpiler, rawParams):
@@ -50,7 +50,7 @@ class DBInstruction(Instruction):
 	def write(self):
 		_tmp_enckey = self.transpiler.enckey
 		self.transpiler.enckey = None
-		self.transpiler.encwrite(self.getval())
+		self.transpiler.encwrite(self._getval())
 		self.transpiler.enckey = _tmp_enckey
 
 class ChangeEncInstruction(Instruction):

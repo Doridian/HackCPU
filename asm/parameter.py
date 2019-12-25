@@ -27,7 +27,7 @@ class Parameter:
 			self.parse_error = e
 
 	def __parse_raw(self, src):
-		if rawData[0:1] == "0x":
+		if src[0:2] == "0x":
 			rawData = unhexlify(src[2:])
 		else:
 			rawData = unhexlify(src.replace(" ", ""))

@@ -1,9 +1,8 @@
 from defs import REG_CREG, REG_MREG, REG_MREGC, REGISTERS, BYTEORDER
 
 class Parameter:
-	def __init__(self, transpiler, src):
+	def __init__(self, src):
 		self.raw = src
-		self.transpiler = transpiler
 		try:
 			self.__parse(str(src).strip())
 			self.parse_error = None
@@ -82,15 +81,15 @@ class Parameter:
 			return 8
 		return 4
 
-	def getcval(self, b64):
+	def getcval(self, transpiler, b64):
 		self.raise_parse_error()
 
 		if isinstance(self.cval, str):
-			lbl = self.transpiler.labels[self.cval]
+			lbl = transpiler.labels[self.cval]
 			if isinstance(lbl, int):
 				self.cval = lbl + self.cval_offset
 			else:
-				self.cval = self.transpiler.labels[self.cval].bpos + self.transpiler.baseaddr + self.cval_offset
+				self.cval = transpiler.labels[self.cval].bpos + transpiler.baseaddr + self.cval_offset
 
 		if isinstance(self.cval, int):
 			if self.rval == REG_CREG and b64:

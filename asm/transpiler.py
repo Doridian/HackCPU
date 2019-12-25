@@ -1,20 +1,17 @@
 from defs import BYTEORDER
-from instruction import Instruction, AlignInstruction
+from instruction_list import getInsturctionClass
 from opcode_defs import OPCODES
 from parameter import Parameter
 from binascii import unhexlify
 
-# params can be:
-# :LABEL to refer to a label
-# @ANY to refer to "thing at this address in RAM" (can be const or Register or Label)
-# Reg to refer to a register
-# So you can do @R1 to "RAM value at address value of R1"
-
 class Transpiler:
     def __init__(self, input_file, output_file):
         self.enccpos = 0
+
+        self.enckey = ""
         self.enckey = None
-        self.labels = []
+
+        self.labels = {}
         self.instructions = []
         self.suffix = None
         self.bpos = 0
@@ -35,9 +32,9 @@ class Transpiler:
 
         for b in bs:
             self.out_f.write((b ^ self.enckey[self.enccpos]).to_bytes(1, BYTEORDER))
-            enccpos = enccpos + 1
-            if enccpos > 7:
-                enccpos = 0
+            self.enccpos = self.enccpos + 1
+            if self.enccpos > 7:
+                self.enccpos = 0
 
     
     def emitLabel(self, name, value):
@@ -47,12 +44,13 @@ class Transpiler:
         return self.emitInstruction("NOP")
 
     def emitInstruction(self, name, params = []):
-        insn = Instruction(self, OPCODES[name], list(map(Parameter, params)))
-        self.emitInstructionRaw(insn)
-        return insn
-
-    def emitInstructionRaw(self, insn):
+        InsturctionCtor = getInsturctionClass(name)
+        opcode = None
+        if name in OPCODES:
+            opcode = OPCODES[name]
+        insn = InsturctionCtor(self, opcode, list(map(Parameter, params)))
         self.instructions.append(insn)
+        return insn
 
     def emitLabelHere(self, name):
         insn = self.emitInstruction("REM")
@@ -110,7 +108,7 @@ class Transpiler:
                     self.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]", "[__BOOTLOADER_BEGIN + 2]"])
                     self.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]", "[__BOOTLOADER_BEGIN + 4]"])
             elif opcodeName == "#ALIGN":
-                self.emitInstructionRaw(AlignInstruction(self, int(lsplit[0], 0), int(lsplit[1], 0)))
+                self.emitInstruction("ALIGN", [int(lsplit[0], 0), int(lsplit[1], 0)])
         else:
             if opcodeName == "DB":
                 lbl = "db_" + lsplit[0]

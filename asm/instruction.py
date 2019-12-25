@@ -10,7 +10,6 @@ class Instruction:
 		self.params = params
 		self.b64 = self.opcode and self.opcode.type == IT_RRVV64
 		self.bpos = transpiler.bpos
-		print(opcode and opcode.name or "N/A", self.len(), transpiler.bpos)
 		transpiler.bpos += self.len()
 
 	# Return falsey for default behaviour (instantiate this class, etc), return truthy

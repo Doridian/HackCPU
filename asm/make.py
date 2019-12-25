@@ -1,4 +1,4 @@
-from opcodes import *
+from opcodes import IT_RRVV, IT_N, IT_RRVV64, IT_VIRTUAL, OPCODES
 from sys import argv
 from math import ceil
 from argparse import ArgumentParser
@@ -251,7 +251,7 @@ class AlignInstruction:
 
 	def write(self):
 		global NOPCODE
-		for i in range(0, self._len):
+		for _ in range(0, self._len):
 			encwrite(NOPCODE)
 
 # params can be:

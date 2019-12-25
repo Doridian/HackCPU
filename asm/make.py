@@ -47,13 +47,13 @@ in_f = open(args.input, "r")
 out_f = open(args.output, "wb")
 
 class Parameter:
-	def __init__(self, src, raw=False):
-		if raw:
-			self.rval = None
-			self.cval = src
-			return
-		src = src.strip()
-		self.__parse(src)
+	def __init__(self, src):
+		self.raw = src
+		try:
+			self.__parse(str(src).strip())
+			self.parse_error = None
+		except Exception as e:
+			self.parse_error = e
 
 	def __parse(self, src, mem=False):
 		if src[0] == "[":
@@ -112,7 +112,13 @@ class Parameter:
 				self.cval = src
 				self.cval_offset = offset
 
+	def raise_parse_error(self):
+		if self.parse_error != None:
+			raise self.parse_error
+
 	def len(self, b64):
+		self.raise_parse_error()
+
 		if self.cval == None:
 			return 0
 		if isinstance(self.cval, bytes):
@@ -122,6 +128,8 @@ class Parameter:
 		return 4
 
 	def getcval(self, b64):
+		self.raise_parse_error()
+
 		if isinstance(self.cval, str):
 			lbl = labels[self.cval]
 			if isinstance(lbl, int):
@@ -165,7 +173,7 @@ class Instruction:
 
 	def len(self):
 		if self.opcode.name == "DB":
-			return self.params[0].len(self.b64)
+			return len(self.params[0].raw)
 
 		if self.opcode.type == IT_VIRTUAL:
 			return 0
@@ -182,11 +190,11 @@ class Instruction:
 		global out_f
 
 		if self.opcode.name == "__ENABLE_ENC":
-			enckey = int(self.params[0], 0).to_bytes(8, BYTEORDER)
+			enckey = self.params[0].raw.to_bytes(8, BYTEORDER)
 		elif self.opcode.name == "__DISABLE_ENC":
 			enckey = None
 		elif self.opcode.name == "DB":
-			cval = self.params[0].getcval(self.b64)
+			cval = self.params[0].raw
 			if cval != None:
 				_tmp_enckey = enckey
 				enckey = None
@@ -261,7 +269,7 @@ def emitLabel(name, value):
 def emitNop():
 	return emitInstruction("NOP")
 
-def emitInstruction(name, params = [])
+def emitInstruction(name, params = []):
 	insn = Instruction(OPCODES[name], list(map(Parameter, params)))
 	emitInstructionRaw(insn)
 	return insn
@@ -309,7 +317,7 @@ def emitLine(line):
 				int_enckkey = int(lsplit[0], 0)
 			baseaddr = 0
 			suffix = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
-			emitInstruction(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+			emitInstruction("__ENABLE_ENC", [int_enckkey])
 		elif opcodeName == "#BOOTLOADER":
 			if doenc:
 				int_enckkey = int(lsplit[0], 0)
@@ -323,14 +331,14 @@ def emitLine(line):
 			if doenc:
 				emitNop()
 				emitLabelHere("__BOOTLOADER_BEGIN")
-				emitInstruction("MOV64", ["ENCREG", str(int_enckkey)])
+				emitInstruction("MOV64", ["ENCREG", int_enckkey])
 				emitInstruction("ENCON")
-				emitInstruction("__ENABLE_ENC", [str(int_enckkey)])
-				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN]" "[__BOOTLOADER_BEGIN]"])
-				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]" "[__BOOTLOADER_BEGIN + 2]"])
-				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]" "[__BOOTLOADER_BEGIN + 4]"])
+				emitInstruction("__ENABLE_ENC", [int_enckkey])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN]", "[__BOOTLOADER_BEGIN]"])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]", "[__BOOTLOADER_BEGIN + 2]"])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]", "[__BOOTLOADER_BEGIN + 4]"])
 		elif opcodeName == "#ALIGN":
-			emitInstruction(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
+			emitInstructionRaw(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
 	else:
 		opc = OPCODES[opcodeName]
 		if opc.name == "DB":
@@ -344,11 +352,9 @@ def emitLine(line):
 				rawData = unhexlify(rawData[2:])
 			else:
 				rawData = unhexlify(rawData.replace(" ", ""))
-			lstr = Parameter(rawData, True)
-			insn = Instruction(opc, [lstr])
-			emitInstructionRaw(insn)
+			insn = emitInstruction("DB", [rawData])
 			emitLabel(lbl, insn)
-			emitLabel(lbl + "_len", lstr.len(False))
+			emitLabel(lbl + "_len", len(rawData))
 		elif opc.name == "DRET":
 			useopc = None
 			if len(lsplit) == 0:
@@ -368,7 +374,7 @@ def emitLine(line):
 					pass
 			else:
 				raise ValueError("DRET only supports 0 or 1 parameter")
-			insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))
+			emitInstruction(useopc, lsplit)
 		elif opc.name == "MOVARG":
 			p1 = lsplit[0]
 			argno = int(lsplit[1], 10)

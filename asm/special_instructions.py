@@ -4,8 +4,7 @@ from opcode_defs import OPCODES
 from defs import BYTEORDER
 from binascii import unhexlify
 
-NOPCODE = OPCODES["NOP"]
-NOPCODEB = NOPCODE.i.to_bytes(1, BYTEORDER)
+NOPCODEB = OPCODES["NOP"].i.to_bytes(1, BYTEORDER)
 
 class AlignInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):

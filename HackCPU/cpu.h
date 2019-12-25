@@ -41,6 +41,7 @@ typedef uint8_t(*cpu_interrupt_handler)(uint8_t interrupt);
 typedef struct cpu_state_t {
 	registers_t reg;
 	cpu_interrupt_handler interrupts[256];
+	uint32_t pctemp;
 
 	uint8_t* ram;
 	uint32_t ram_size;

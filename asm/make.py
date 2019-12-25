@@ -37,6 +37,7 @@ BYTEORDER = "little"
 
 baseaddr = None
 enckey = None
+suffix = None
 
 bpos = 0
 labels = {}
@@ -253,131 +254,151 @@ class AlignInstruction:
 
 currentLine = ""
 
+def emitLabel(name, value):
+	global labels
+	labels[name] = value
+	
+def emitNop():
+	return emitInstruction("NOP")
+
+def emitInstruction(name, params = [])
+	insn = Instruction(OPCODES[name], list(map(Parameter, params)))
+	emitInstructionRaw(insn)
+	return insn
+
+def emitInstructionRaw(insn):
+	global instructions
+	instructions.append(insn)
+
+def emitLabelHere(name):
+	insn = emitInstruction("REM")
+	emitLabel(name, insn)
+
+def emitLine(line):
+	global baseaddr
+	global labels
+	global suffix
+
+	line = line.strip()
+
+	if len(line) < 1:
+		return
+
+	lineCommentPos = line.find(";")
+	if lineCommentPos > 0:
+		line = line[:lineCommentPos]
+
+	if len(line) < 1:
+		return
+
+	lineSpacePos = line.find(" ")
+	if lineSpacePos < 0:
+		opcodeName = line
+		lsplit = []
+	else:
+		opcodeName = line[0:lineSpacePos]
+		lsplit = line[lineSpacePos+1:].strip().split(",")
+
+	if opcodeName[0] == ":":
+		emitLabelHere(opcodeName[1:])
+	elif opcodeName[0] == "#" or opcodeName[0] == ";":
+		doenc = len(lsplit) > 0
+		int_enckkey = int(0)
+		if opcodeName == "#ROM":
+			if doenc:
+				int_enckkey = int(lsplit[0], 0)
+			baseaddr = 0
+			suffix = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
+			emitInstruction(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
+		elif opcodeName == "#BOOTLOADER":
+			if doenc:
+				int_enckkey = int(lsplit[0], 0)
+
+			bootloader_offset = int(lsplit[1], 0)
+			if bootloader_offset > 0:
+				baseaddr = bootloader_offset
+			else:
+				baseaddr = 0
+			suffix = bootloader_offset.to_bytes(4, BYTEORDER, signed=True)
+			if doenc:
+				emitNop()
+				emitLabelHere("__BOOTLOADER_BEGIN")
+				emitInstruction("MOV64", ["ENCREG", str(int_enckkey)])
+				emitInstruction("ENCON")
+				emitInstruction("__ENABLE_ENC", [str(int_enckkey)])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN]" "[__BOOTLOADER_BEGIN]"])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]" "[__BOOTLOADER_BEGIN + 2]"])
+				emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]" "[__BOOTLOADER_BEGIN + 4]"])
+		elif opcodeName == "#ALIGN":
+			emitInstruction(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
+	else:
+		opc = OPCODES[opcodeName]
+		if opc.name == "DB":
+			lbl = "db_" + lsplit[0]
+			rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
+			if rawData[0] == '"':
+				if rawData[-1] != '"' or len(rawData) < 2:
+					raise ValueError("Missing closing quote in DB string")
+				rawData = bytes(rawData[1:-1], "ascii")
+			elif rawData[0:1] == "0x":
+				rawData = unhexlify(rawData[2:])
+			else:
+				rawData = unhexlify(rawData.replace(" ", ""))
+			lstr = Parameter(rawData, True)
+			insn = Instruction(opc, [lstr])
+			emitInstructionRaw(insn)
+			emitLabel(lbl, insn)
+			emitLabel(lbl + "_len", lstr.len(False))
+		elif opc.name == "DRET":
+			useopc = None
+			if len(lsplit) == 0:
+				useopc = "RETN"
+			elif len(lsplit) == 1:
+				useopc = "RETNA"
+				try :
+					x = int(lsplit[0], 10) * 4
+					if x == 0:
+						useopc = "RETN"
+						lsplit = []
+					elif x < 0:
+						raise TypeError("DRET arg must be >= 0")
+					else:
+						lsplit[0] = "%d" % x
+				except ValueError:
+					pass
+			else:
+				raise ValueError("DRET only supports 0 or 1 parameter")
+			insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))
+		elif opc.name == "MOVARG":
+			p1 = lsplit[0]
+			argno = int(lsplit[1], 10)
+			if argno < 1:
+				raise ValueError("MOVARG argno must be at least 1")
+			p2 = "[BSP + %d]" % ((argno * 4) + 4)
+			emitInstruction("MOV", [p1, p2])
+		else:
+			emitInstruction(opcodeName, lsplit)
+
 def parse():
 	global currentLine
 	global baseaddr
 	global enccpos
-	global labels
 	global instructions
+	global suffix
 
 	suffix = None
 
 	for line in in_f:
-		line = line.strip()
-
-		if len(line) < 1:
-			continue
-
-		lineCommentPos = line.find(";")
-		if lineCommentPos > 0:
-			line = line[:lineCommentPos]
-
-		if len(line) < 1:
-			continue
-
 		currentLine = line
-
-		insn = None
-		lineSpacePos = line.find(" ")
-		if lineSpacePos < 0:
-			opcodeName = line
-			lsplit = []
-		else:
-			opcodeName = line[0:lineSpacePos]
-			lsplit = line[lineSpacePos+1:].strip().split(",")
-
-		if opcodeName[0] == ":":
-			insn = Instruction(OPCODES["REM"], [])
-			instructions.append(insn)
-			labels[opcodeName[1:]] = insn
-		elif opcodeName[0] == "#" or opcodeName[0] == ";":
-			doenc = len(lsplit) > 0
-			int_enckkey = int(0)
-			if opcodeName == "#ROM":
-				if doenc:
-					int_enckkey = int(lsplit[0], 0)
-				baseaddr = 0
-				suffix = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
-				instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
-			elif opcodeName == "#BOOTLOADER":
-				if doenc:
-					int_enckkey = int(lsplit[0], 0)
-
-				bootloader_offset = int(lsplit[1], 0)
-				if bootloader_offset > 0:
-					baseaddr = bootloader_offset
-				else:
-					baseaddr = 0
-				suffix = bootloader_offset.to_bytes(4, BYTEORDER, signed=True)
-				if doenc:
-					instructions.append(Instruction(OPCODES["NOP"]))
-					instructions.append(Instruction(OPCODES["MOV64"], [Parameter("ENCREG"), Parameter(str(int_enckkey))]))
-					instructions.append(Instruction(OPCODES["ENCON"]))
-					instructions.append(Instruction(OPCODES["__ENABLE_ENC"], [str(int_enckkey)]))
-					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 16]"), Parameter("[PC - 18]")]))
-					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 18]"), Parameter("[PC - 20]")]))
-					instructions.append(Instruction(OPCODES["XOR"], [Parameter("[PC - 20]"), Parameter("[PC - 22]")]))
-			elif opcodeName == "#ALIGN":
-				instructions.append(AlignInstruction(int(lsplit[0], 0), int(lsplit[1], 0)))
-		else:
-			opc = OPCODES[opcodeName]
-			if opc.name == "DB":
-				lbl = "db_" + lsplit[0]
-				rawData = line[line.find(lsplit[0]) + len(lsplit[0]) + 1:].strip()
-				if rawData[0] == '"':
-					if rawData[-1] != '"' or len(rawData) < 2:
-						raise ValueError("Missing closing quote in DB string")
-					rawData = bytes(rawData[1:-1], "ascii")
-				elif rawData[0:1] == "0x":
-					rawData = unhexlify(rawData[2:])
-				else:
-					rawData = unhexlify(rawData.replace(" ", ""))
-				lstr = Parameter(rawData, True)
-				insn = Instruction(opc, [lstr])
-				labels[lbl] = insn
-				labels[lbl + "_len"] = lstr.len(False)
-			elif opc.name == "DRET":
-				useopc = None
-				if len(lsplit) == 0:
-					useopc = "RETN"
-				elif len(lsplit) == 1:
-					useopc = "RETNA"
-					try :
-						x = int(lsplit[0], 10) * 4
-						if x == 0:
-							useopc = "RETN"
-							lsplit = []
-						elif x < 0:
-							raise TypeError("DRET arg must be >= 0")
-						else:
-							lsplit[0] = "%d" % x
-					except ValueError:
-						pass
-				else:
-					raise ValueError("DRET only supports 0 or 1 parameter")
-				insn = Instruction(OPCODES[useopc], list(map(Parameter, lsplit)))
-			elif opc.name == "MOVARG":
-				p1 = Parameter(lsplit[0])
-				argno = int(lsplit[1], 10)
-				if argno < 1:
-					raise ValueError("MOVARG argno must be at least 1")
-				p2 = Parameter("[BSP + %d]" % ((argno * 4) + 4))
-				insn = Instruction(OPCODES["MOV"], [p1, p2])
-			else:
-				insn = Instruction(opc, list(map(Parameter, lsplit)))
-
-		if insn != None:
-			instructions.append(insn)
+		emitLine(line)
 
 	if baseaddr < 0:
 		raise ValueError("baseaddr < 0")
 
 	enccpos = baseaddr % 8
 
-	labels["BASEADDR"] = baseaddr
-	insn = Instruction(OPCODES["REM"], [])
-	instructions.append(insn)
-	labels["ENDADDR"] = insn
+	emitLabel("BASEADDR", baseaddr)
+	emitLabelHere("ENDADDR")
 
 	for insn in instructions:
 		insn.write()

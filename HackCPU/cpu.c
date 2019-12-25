@@ -20,9 +20,10 @@ void cpu_reset(cpu_state s) {
 	for (i = 0; i < sizeof(BOOTLOADER) - 4; i++) {
 		s->ram[i + bootloader_baseaddr] = BOOTLOADER[i];
 	}
-	s->reg.pc = bootloader_baseaddr;
+	s->pctemp = bootloader_baseaddr;
 	s->needs_reset = 0;
 	s->instruction_counter = 0;
+	s->reg.pc = s->pctemp;
 }
 
 static void devzero_write(uint32_t id, iostream_t* io, uint8_t i) { }
@@ -135,9 +136,9 @@ void cpu_free(cpu_state s) {
 }
 
 static inline uint8_t iread8(cpu_state s) {
-	uint32_t opc = s->reg.pc++;
+	uint32_t opc = s->pctemp++;
 	if (opc >= s->ram_size) {
-		s->reg.pc = 1;
+		s->pctemp = 1;
 		opc = 0;
 	}
 	uint8_t raw = s->ram[opc];
@@ -177,7 +178,7 @@ static inline uint64_t iread64(cpu_state s) {
 
 #define ireadrv(s, nbits, idx) res.reg##idx = (uint##nbits##_t*)(s->reg.u + r##idx); \
 	if (r##idx == CREG_ID) { \
-		res.reg##idx = (uint##nbits##_t*)(s->ram + constrain_ram(s, s->reg.pc)); \
+		res.reg##idx = (uint##nbits##_t*)(s->ram + constrain_ram(s, s->pctemp)); \
 		res.reg##idx##val = iread##nbits(s); \
 	} else if (r##idx == MREG_ID) { \
 		uint8_t regid = iread8(s); \
@@ -261,13 +262,13 @@ static uint64_t pop64(cpu_state s) {
 #define IFGT()  if (!(s->reg.flagr & (FLAG_LT|FLAG_EQ)))
 
 #define PUSHCALLSTACK() { \
-	push(s, s->reg.pc); \
+	push(s, s->pctemp); \
 	push(s, s->reg.bsp); \
 	s->reg.bsp = s->reg.csp; \
 }
 #define DOJMP()	   DOJMPP(1);
 #define DOJMPZ()   DOJMPP(2);
-#define DOJMPP(a)  { s->reg.pc = rrvv32.reg ## a ## val; }
+#define DOJMPP(a)  { s->pctemp = rrvv32.reg ## a ## val; }
 #define DOCALL()   DOCALLP(1);
 #define DOCALLZ()  DOCALLP(2);
 #define DOCALLP(a) { \
@@ -278,7 +279,7 @@ static uint64_t pop64(cpu_state s) {
 #define DORETN() { \
 	s->reg.csp = s->reg.bsp; \
 	s->reg.bsp = pop(s); \
-	s->reg.pc  = pop(s); \
+	s->pctemp = pop(s); \
 }
 
 #define IFZ()  if (rrvv32.reg1val == 0)
@@ -418,7 +419,7 @@ static uint8_t interrupt_nopush(cpu_state s, uint8_t i) {
 		return cpu_interrupt(s, i);
 	}
 	PUSHCALLSTACK();
-	s->reg.pc = newpc;
+	s->pctemp = newpc;
 	return 0;
 }
 
@@ -741,6 +742,9 @@ uint8_t cpu_step(cpu_state s) {
 	}
 
 	uint8_t res = _cpu_step(s);
+	//printf("PC = %d\n", s->pctemp);
+	s->reg.pc = s->pctemp;
+
 	if (!res) {
 		if (s->reg.flagr & FLAG_TRAP) {
 			s->reg.flagr &= ~FLAG_TRAP;

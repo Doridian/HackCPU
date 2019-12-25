@@ -10,8 +10,8 @@ XOR R5, R5
 XOR R6, R6
 
 # Store BL begin in R2
-MOV R2, PC
 :CALCLABEL
+MOV R2, PC
 SUB R2, :CALCLABEL
 
 # Read ROM to RAM

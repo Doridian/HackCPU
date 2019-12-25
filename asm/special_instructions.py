@@ -17,14 +17,14 @@ class AlignInstruction(Instruction):
 		cur_offset = transpiler.bpos % base
 		if offset < cur_offset:
 			offset += base
-		self._len = offset - cur_offset
+		self.align_len = offset - cur_offset
 		Instruction.__init__(self, transpiler, opcode)
 
 	def _len(self):
-		return self._len
+		return self.align_len
 
 	def write(self):
-		for _ in range(0, self._len):
+		for _ in range(0, self.align_len):
 			self.transpiler.encwrite(NOPCODEB)
 
 class DBInstruction(Instruction):

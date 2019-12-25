@@ -48,10 +48,7 @@ class DBInstruction(Instruction):
 		return insn
 
 	def write(self):
-		_tmp_enckey = self.transpiler.enckey
-		self.transpiler.enckey = None
-		self.transpiler.encwrite(self._getval())
-		self.transpiler.enckey = _tmp_enckey
+		self.transpiler.rawwrite(self._getval())
 
 class ChangeEncInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):

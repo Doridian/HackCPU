@@ -76,14 +76,19 @@ class Transpiler:
         self.in_f.close()
         self.out_f.close()
 
-    def encwrite(self, bs):
+    def rawwrite(self, bs):
         self.writepos += len(bs)
 
+        self.out_f.write(bs)
+        self.enccpos += len(bs)
+        self.enccpos %= 8
+
+    def encwrite(self, bs):
         if not self.enckey:
-            self.out_f.write(bs)
-            self.enccpos += len(bs)
-            self.enccpos %= 8
+            self.rawwrite(bs)
             return
+        
+        self.writepos += len(bs)
 
         for b in bs:
             self.out_f.write((b ^ self.enckey[self.enccpos]).to_bytes(1, BYTEORDER))

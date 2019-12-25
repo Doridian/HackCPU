@@ -3,7 +3,52 @@ from instruction_list import getInstructionClass
 from parameter import Parameter
 
 def lineSplit(line):
-    return line.strip().split(",")
+    line = line.strip()
+    params = []
+    curStr = ''
+    inQuote = False
+    inBracket = False
+
+    def appendParam(c = ''):
+        nonlocal curStr
+        css = curStr.strip()
+        if len(css) < 1:
+            return
+        params.append(css + c)
+        curStr = ''
+
+    for i in range(0, len(line)):
+        c = line[i]
+
+        if c == '"':
+            if inBracket:
+                raise ValueError('Encountered " while in [')
+            inQuote = not inQuote
+            if not inQuote:
+                appendParam(c)
+                continue
+        elif not inQuote:
+            if c == '[':
+                if inBracket:
+                    raise ValueError('Encountered [ while in [')
+                inBracket = True
+            elif c == ']':
+                if not inBracket:
+                    raise ValueError('Encountered ] while not in [')
+                inBracket = False
+                appendParam(c)
+                continue
+            elif not inBracket:
+                if c == ' ':
+                    continue
+                elif c == ',':
+                    appendParam()
+                    continue
+
+        curStr += c
+
+    appendParam()
+    return params
 
 class Transpiler:
     def __init__(self, input_file, output_file):

@@ -1,21 +1,51 @@
 from defs import REG_CREG, REG_MREG, REG_MREGC, REGISTERS, BYTEORDER
+from binascii import unhexlify
 
 class Parameter:
 	def __init__(self, src):
-		self.raw = src
+		self.raw = None
+
+		# Remove quotes if string and quoted (don't parse if it is quoted!)
+		if isinstance(src, str):
+			src = src.strip()
+			if src[0] == '"':
+				if src[-1] != '"':
+					raise ValueError("No closing quote")
+				src = src[1:-1]
+			else:
+				try:
+					self.raw = self.__parse_raw(src)
+				except:
+					pass
+		if not self.raw:
+			self.raw = src
+
 		try:
-			self.__parse(str(src).strip())
+			self.__parse_cval(str(src))
 			self.parse_error = None
 		except Exception as e:
 			self.parse_error = e
 
-	def __parse(self, src, mem=False):
+	def __parse_raw(self, src):
+		if rawData[0:1] == "0x":
+			rawData = unhexlify(src[2:])
+		else:
+			rawData = unhexlify(src.replace(" ", ""))
+
+		return rawData
+
+	def __parse_cval(self, src, mem=False):
+		if src[0] == '"':
+			if src[-1] != '"':
+				raise ValueError("No closing quote")
+			return self.__parse_cval(src[1:-1])
+
 		if src[0] == "[":
 			if mem:
 				raise ValueError("Nested [ are not allowed")
 			if src[-1] != "]":
 				raise ValueError("Missing ] after [")
-			return self.__parse(src[1:-1], True)
+			return self.__parse_cval(src[1:-1], True)
 
 		__creg = REG_CREG
 		if mem:

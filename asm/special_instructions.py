@@ -32,22 +32,21 @@ class DBInstruction(Instruction):
 		Instruction.__init__(self, transpiler, opcode, params)
     
 	def len(self):
-		return len(self.params[0].raw)
+		return len(bytes(self.params[0].raw, "ascii"))
 
 	@staticmethod
 	def handle(InstructionCtor, name, transpiler, rawParams):
 		lbl = "db_" + rawParams[0]
-		rawData = bytes(rawParams[1], "ascii")
-		insn = Instruction.handle(InstructionCtor, name, transpiler, [rawData])
+		insn = Instruction.handle(InstructionCtor, name, transpiler, [rawParams[1]])
 		transpiler.emitLabel(lbl, insn)
-		transpiler.emitLabel(lbl + "_len", len(rawData))
+		transpiler.emitLabel(lbl + "_len", insn.len())
 		return insn
 
 	def write(self):
 		cval = self.params[0].raw
 		_tmp_enckey = self.transpiler.enckey
 		self.transpiler.enckey = None
-		self.transpiler.encwrite(cval)
+		self.transpiler.encwrite(bytes(cval, "ascii"))
 		self.transpiler.enckey = _tmp_enckey
 
 class ChangeEncInstruction(Instruction):

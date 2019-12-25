@@ -1,8 +1,9 @@
 from defs import BYTEORDER
 from instruction_list import getInstructionClass
-from opcode_defs import OPCODES
 from parameter import Parameter
-from binascii import unhexlify
+
+def lineSplit(line):
+    return line.strip().split(",")
 
 class Transpiler:
     def __init__(self, input_file, output_file):
@@ -73,7 +74,7 @@ class Transpiler:
             lsplit = []
         else:
             opcodeName = line[0:lineSpacePos]
-            lsplit = line[lineSpacePos+1:].strip().split(",")
+            lsplit = lineSplit(line[lineSpacePos+1:])
 
         if opcodeName[0] == ":":
             self.emitLabelHere(opcodeName[1:])

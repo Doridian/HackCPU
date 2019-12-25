@@ -30,7 +30,7 @@ PUSH R6
 PUSH 0
 INT 0
 HALT
-DB romtooshort,ROM too short or not present
+DB romtooshort, "ROM too short or not present"
 
 :keeploading
 CMP R1, R2
@@ -45,7 +45,7 @@ PUSH R6
 PUSH 0
 INT 0
 HALT
-DB romtoolong,ROM too long
+DB romtoolong, "ROM too long"
 
 :keeploading2
 MOV R3, R2

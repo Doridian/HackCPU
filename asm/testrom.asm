@@ -30,7 +30,7 @@ INT 0
 
 :test_fail
 HALT
-DB ramok,RAM OK
+DB ramok, "RAM OK"
 
 :ram_write
 MOVARG R1, 1

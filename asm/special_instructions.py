@@ -20,7 +20,7 @@ class AlignInstruction(Instruction):
 		self._len = offset - cur_offset
 		Instruction.__init__(self, transpiler, opcode)
 
-	def len(self):
+	def _len(self):
 		return self._len
 
 	def write(self):
@@ -31,7 +31,7 @@ class DBInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
 		Instruction.__init__(self, transpiler, opcode, params)
     
-	def len(self):
+	def _len(self):
 		return len(bytes(self.params[0].raw, "ascii"))
 
 	@staticmethod
@@ -53,7 +53,7 @@ class ChangeEncInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
 		Instruction.__init__(self, transpiler, opcode, params)
 
-	def len(self):
+	def _len(self):
 		return 0
 
 	def write(self):
@@ -66,7 +66,7 @@ class REMInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
 		Instruction.__init__(self, transpiler, opcode, params)
 
-	def len(self):
+	def _len(self):
 		return 0
 
 	def write(self):

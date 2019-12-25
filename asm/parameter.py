@@ -100,18 +100,18 @@ class Parameter:
 		if self.parse_error != None:
 			raise self.parse_error
 
-	def len(self, b64):
+	def len(self, constlen):
 		self.raise_parse_error()
 
 		if self.cval == None:
 			return 0
 		if isinstance(self.cval, bytes):
 			return len(self.cval)
-		if self.rval == REG_CREG and b64:
-			return 8
+		if self.rval == REG_CREG:
+			return constlen
 		return 4
 
-	def getcval(self, transpiler, b64):
+	def getcval(self, transpiler, constlen):
 		self.raise_parse_error()
 
 		if isinstance(self.cval, str):
@@ -122,8 +122,8 @@ class Parameter:
 				self.cval = transpiler.labels[self.cval].bpos + transpiler.baseaddr + self.cval_offset
 
 		if isinstance(self.cval, int):
-			if self.rval == REG_CREG and b64:
-				return self.cval.to_bytes(8, BYTEORDER)
+			if self.rval == REG_CREG:
+				return self.cval.to_bytes(constlen, BYTEORDER)
 			return self.cval.to_bytes(4, BYTEORDER)
 
 		return self.cval

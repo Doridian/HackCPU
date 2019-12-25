@@ -59,6 +59,7 @@ class Transpiler:
         self.enckey = None
 
         self.labels = {}
+        self.macros = {}
         self.instructions = []
         self.suffix = None
         self.bpos = 0
@@ -68,6 +69,8 @@ class Transpiler:
         self.writepos = 0
 
         self.baseaddr = -1
+
+        self.inMacro = None
 
     def close(self):
         self.in_f.close()
@@ -113,7 +116,7 @@ class Transpiler:
         if lineCommentPos > 0:
             line = line[:lineCommentPos]
 
-        if len(line) < 1:
+        if len(line) < 1 or line[0] == "#" or line[0] == ";":
             return
 
         lineSpacePos = line.find(" ")
@@ -126,13 +129,23 @@ class Transpiler:
 
         opcodeNameUpper = opcodeName.upper()
 
-        if opcodeNameUpper[0] == "#" or opcodeNameUpper[0] == ";":
-            return
+        if self.inMacro:
+            if opcodeNameUpper == "%END":
+                MacroCls = getMacro(self, self.inMacro[0])
+                macro = MacroCls(self.inMacro[1], self.inMacro[2])
+                macro.emit(self)
+                self.inMacro = None
+                return
+            self.inMacro[2].append(line)
 
         if opcodeNameUpper[0] == ":":
             self.emitLabelHere(opcodeName[1:])
         elif opcodeNameUpper[0] == "%":
-            MacroCls = getMacro(opcodeNameUpper[1:])
+            if opcodeNameUpper == "%BEGIN":
+                self.inMacro = (lsplit[0], lsplit[1:], [])
+                return
+
+            MacroCls = getMacro(self, opcodeNameUpper[1:])
             macro = MacroCls(lsplit)
             macro.emit(self)
         else:

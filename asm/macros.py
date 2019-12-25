@@ -1,20 +1,21 @@
-# %beginmacro MACRONAME, ARG1, ARG2, ...
+# %BEGIN MACRO, MACRONAME, ARG1, ARG2, ...
 # MOV ARG1, ARG2
 # .....
-# %endmacro
+# %END
 
 from defs import BYTEORDER
 
 class Macro:
-    def __init__(self, params = []):
+    def __init__(self, params = [], lines = []):
         self.params = params
+        self.lines = lines
 
     def emit(self, transpiler):
         raise ValueError("Invalid base macro")
 
 class ROMMacro(Macro):
-    def __init__(self, params = []):
-        Macro.__init__(self, params)
+    def __init__(self, params = [], lines = []):
+        Macro.__init__(self, params, lines)
 
     def emit(self, transpiler):
         doenc = len(self.params) > 0
@@ -26,8 +27,8 @@ class ROMMacro(Macro):
         transpiler.emitInstruction("__ENABLE_ENC", [int_enckkey])
 
 class BOOTLOADERMacro(Macro):
-    def __init__(self, params = []):
-        Macro.__init__(self, params)
+    def __init__(self, params = [], lines = []):
+        Macro.__init__(self, params, lines)
 
     def emit(self, transpiler):
         doenc = len(self.params) > 0
@@ -52,12 +53,31 @@ class BOOTLOADERMacro(Macro):
             transpiler.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]", "[__BOOTLOADER_BEGIN + 2]"])
             transpiler.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]", "[__BOOTLOADER_BEGIN + 4]"])
 
+def makeSimpleMacro(outerParams, outerLines):
+    return lambda params = [], lines = []: SIMPLEMacro(params, lines, outerParams, outerLines)
+
+class SIMPLEMacro(Macro):
+    def __init__(self, params = [], lines = [], outerParams = [], outerLines = []):
+        Macro.__init__(self, params, lines)
+        self.outerParams = outerParams
+        self.outerLines = outerLines
+
+    def emit(self, transpiler):
+        pass
+
+class MACROMacro(Macro):
+    def __init__(self, params = [], lines = []):
+        Macro.__init__(self, params, lines)
+
+    def emit(self, transpiler):
+        transpiler.macros[self.params[0]] = makeSimpleMacro(self.params, self.lines)
+
 macros = {}
 macros["ROM"] = ROMMacro
 macros["BOOTLOADER"] = BOOTLOADERMacro
+macros["MACRO"] = MACROMacro
 
-def getMacro(name):
+def getMacro(transpiler, name):
+    if name in transpiler.macros:
+        return transpiler.macros[name]
     return macros[name]
-
-def loadMacro(str):
-    pass

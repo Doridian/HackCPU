@@ -1,5 +1,6 @@
 from defs import BYTEORDER
 from instruction_list import getInstructionClass
+from macros import getMacro
 from parameter import Parameter
 
 def lineSplit(line):
@@ -66,6 +67,8 @@ class Transpiler:
         self.currentLine = ""
         self.writepos = 0
 
+        self.baseaddr = -1
+
     def close(self):
         self.in_f.close()
         self.out_f.close()
@@ -121,40 +124,19 @@ class Transpiler:
             opcodeName = line[0:lineSpacePos]
             lsplit = lineSplit(line[lineSpacePos+1:])
 
-        if opcodeName[0] == ":":
-            self.emitLabelHere(opcodeName[1:])
-        elif opcodeName[0] == "#" or opcodeName[0] == ";":
-            doenc = len(lsplit) > 0
-            int_enckkey = int(0)
-            if opcodeName == "#ROM":
-                if doenc:
-                    int_enckkey = int(lsplit[0], 0)
-                self.baseaddr = 0
-                self.suffix = (int_enckkey ^ 0x0BB0FECABEBADEFA).to_bytes(8, BYTEORDER)
-                self.emitInstruction("__ENABLE_ENC", [int_enckkey])
-            elif opcodeName == "#BOOTLOADER":
-                if doenc:
-                    int_enckkey = int(lsplit[0], 0)
+        opcodeNameUpper = opcodeName.upper()
 
-                bootloader_offset = int(lsplit[1], 0)
-                if bootloader_offset > 0:
-                    self.baseaddr = bootloader_offset
-                else:
-                    self.baseaddr = 0
-                self.suffix = bootloader_offset.to_bytes(4, BYTEORDER, signed=True)
-                if doenc:
-                    self.emitNop()
-                    self.emitLabelHere("__BOOTLOADER_BEGIN")
-                    self.emitInstruction("MOV64", ["ENCREG", int_enckkey])
-                    self.emitInstruction("ENCON")
-                    self.emitInstruction("__ENABLE_ENC", [int_enckkey])
-                    self.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN]", "[__BOOTLOADER_BEGIN]"])
-                    self.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 2]", "[__BOOTLOADER_BEGIN + 2]"])
-                    self.emitInstruction("XOR", ["[__BOOTLOADER_BEGIN + 4]", "[__BOOTLOADER_BEGIN + 4]"])
-            elif opcodeName == "#ALIGN":
-                self.emitInstruction("ALIGN", [int(lsplit[0], 0), int(lsplit[1], 0)])
+        if opcodeNameUpper[0] == "#" or opcodeNameUpper[0] == ";":
+            return
+
+        if opcodeNameUpper[0] == ":":
+            self.emitLabelHere(opcodeName[1:])
+        elif opcodeNameUpper[0] == "%":
+            MacroCls = getMacro(opcodeNameUpper[1:])
+            macro = MacroCls(lsplit)
+            macro.emit(self)
         else:
-            self.emitInstruction(opcodeName, lsplit)
+            self.emitInstruction(opcodeNameUpper, lsplit)
 
     def parse(self):
         self.suffix = None

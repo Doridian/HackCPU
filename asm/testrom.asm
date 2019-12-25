@@ -1,4 +1,4 @@
-#ROM 0
+%ROM 0
 
 # Read RAM size
 PUSH 1

@@ -9,8 +9,8 @@ NOPCODEB = OPCODES["NOP"].i.to_bytes(1, BYTEORDER)
 class AlignInstruction(Instruction):
 	def __init__(self, transpiler, opcode, params = []):
 		self.transpiler = transpiler
-		base = params[0].raw
-		offset = params[1].raw
+		base = int(params[0].raw, 0)
+		offset = int(params[1].raw, 0)
 		if offset >= base:
 			raise ValueError("Offset >= Base for align")
 		cur_offset = transpiler.bpos % base
